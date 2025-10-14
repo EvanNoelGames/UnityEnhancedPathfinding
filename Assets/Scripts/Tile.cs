@@ -1,18 +1,61 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 
 public class Tile : MonoBehaviour
 {
-    // Start is called before the first frame update
+    public GameObject plane;
+    public TextMeshPro textMesh;
+
+    private float weight = 1.0f;
+
+    private Material planeMaterial;
+    
     void Start()
     {
-        
+        planeMaterial = plane.GetComponent<MeshRenderer>().material;
+    }
+    public void SetWeight(float newWeight)
+    {
+        weight = newWeight;
     }
 
-    // Update is called once per frame
-    void Update()
+    public float GetWeight()
     {
-        
+        return weight;
+    }
+
+    public void Reset()
+    {
+        planeMaterial.color = Color.white;
+    }
+
+    public void SetStart()
+    {
+        planeMaterial.color = Color.green;
+    }
+
+    public void SetExit()
+    {
+        planeMaterial.color = Color.red;
+    }
+    
+    public void SetFill(bool fill)
+    {
+        if (fill)
+        {
+            planeMaterial.color = Color.gray;
+        }
+        else
+        {
+            Reset();
+        }
+    }
+
+    public bool GetFill()
+    {
+        return planeMaterial.color == Color.gray;
     }
 }
