@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Newtonsoft.Json.Linq;
 using UnityEngine;
 
 public class Grid : MonoBehaviour
@@ -73,6 +74,48 @@ public class Grid : MonoBehaviour
                 }
             }
         }
+    }
+
+   public  Vector2 GetTilePosition(Tile tile)
+    {
+        foreach (KeyValuePair<Vector2, Tile> pair in tiles)
+        {
+            if (tile == pair.Value)
+            {
+                return pair.Key;
+            }
+        }
+        
+        return Vector2.zero;
+    }
+    
+    public List<Tile> FindNeighbors(Tile tile)
+    {
+        // get the current tile pos
+        Vector2 currentPos = GetTilePosition(tile);
+        
+        // add all the potential offsets to the vector or just loop through them 
+        List<Tile> neighbors = new List<Tile>();
+        
+        for (int x = -1; x <= 1; ++x)
+        {
+            for (int y = -1; y <= 1; ++y)
+            {
+                if (x == 0 && y == 0)
+                    continue; 
+                
+                // make the neighbor point
+                Vector2 neighborPos = new Vector2(currentPos.x + x, currentPos.y + y);
+                
+               
+                // check if its in the grid list which means that its a valid tile
+                if (tiles.TryGetValue(neighborPos,  out Tile neighborTile) &&  !neighborTile.GetFill())
+                {
+                    neighbors.Add(neighborTile);
+                }
+            }
+        }
+        return neighbors;
     }
 
     #region SETUP
