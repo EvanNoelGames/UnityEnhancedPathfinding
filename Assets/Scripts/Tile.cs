@@ -54,6 +54,11 @@ public class Tile : MonoBehaviour
         }
     }
 
+    public void SetPath()
+    {
+        planeMaterial.color = Color.blue;
+    }
+
     public bool GetFill()
     {
         return planeMaterial.color == Color.gray;

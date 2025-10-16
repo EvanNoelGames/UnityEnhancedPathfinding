@@ -6,6 +6,8 @@ using UnityEngine;
 public class Grid : MonoBehaviour
 {
     private Dictionary<Vector2, Tile> tiles = new Dictionary<Vector2, Tile>();
+    
+    AStar astar = new AStar();
 
     private Tile startTile;
     private Tile exitTile;
@@ -127,7 +129,25 @@ public class Grid : MonoBehaviour
 
     public void RunSimulation()
     {
+
+        if (startTile == null || exitTile == null)
+        {
+            Debug.LogWarning("Start and Exit Tile arent set!");
+            return;
+        }
         
+        List<Tile> path = astar.FindPath(startTile, exitTile, this);
+
+        if (path.Count == 0)
+        {
+            Debug.Log("No path found!");
+            return;
+        }
+
+        foreach (var tile in path)
+        {
+            tile.SetPath();
+        }
     }
 
     void PlaceTiles()
