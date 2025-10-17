@@ -11,8 +11,11 @@ public class Grid : MonoBehaviour
 
     private Tile startTile;
     private Tile exitTile;
-
+    private GameObject agent;
+    private Tile agentTile;
+    
     public GameObject tilePrefab;
+    public GameObject agentPrefab;
     
     public float tileDistance = 0.8f;
     public int xSize = 9;
@@ -58,9 +61,18 @@ public class Grid : MonoBehaviour
                 tile.SetFill(!tile.GetFill());
                 break;
             case DebugMenu.PlaceType.AGENT:
-                // Implement
+                if (agent != null)
+                    Destroy(agent);
+                CreateAgent(clickedTile);
                 break;
         }
+    }
+
+    void CreateAgent(GameObject spawnTile)
+    {
+        agent = Instantiate(agentPrefab);
+        agent.transform.position = spawnTile.transform.position - Vector3.forward;
+        agentTile = spawnTile.GetComponent<Tile>();
     }
 
     void CheckForClick()
@@ -117,31 +129,11 @@ public class Grid : MonoBehaviour
     #region SETUP
     public void SetupBoard()
     {
+        if (agent != null)
+            Destroy(agent);
+        
         ClearBoard();
         PlaceTiles();
-    }
-
-    public void RunSimulation()
-    {
-
-        if (startTile == null || exitTile == null)
-        {
-            Debug.LogWarning("Start and Exit Tile arent set!");
-            return;
-        }
-        
-        List<Tile> path = astar.FindPath(startTile, exitTile, this);
-
-        if (path.Count == 0)
-        {
-            Debug.Log("No path found!");
-            return;
-        }
-
-        foreach (var tile in path)
-        {
-            tile.SetPath();
-        }
     }
 
     void PlaceTiles()
@@ -191,4 +183,40 @@ public class Grid : MonoBehaviour
         tiles.Clear();
     }
     #endregion
+    
+    public void RunSimulation()
+    {
+        if (startTile == null || exitTile == null)
+        {
+            Debug.LogWarning("Start and Exit Tile arent set!");
+            return;
+        }
+        
+        List<Tile> path = astar.FindPath(startTile, exitTile, this);
+
+        // Agent's path
+        if (agent != null)
+        {
+            List<Tile> agentPath = astar.FindPath(agentTile, exitTile, this);
+            
+            if (agentPath.Count == 0)
+            {
+                Debug.Log("No path found for agent!");
+                return;
+            }
+            
+            agent.GetComponent<Agent>().BeginWalk(agentPath);
+        }
+        
+        if (path.Count == 0)
+        {
+            Debug.Log("No path found!");
+            return;
+        }
+
+        foreach (var tile in path)
+        {
+            tile.SetPath();
+        }
+    }
 }

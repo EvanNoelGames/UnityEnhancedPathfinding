@@ -45,5 +45,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   tilePrefab: {fileID: 4762594461773941582, guid: 6e5c608134a12254a8e45bdea20f6d79, type: 3}
+  agentPrefab: {fileID: 2175801190789072287, guid: 0097b152bcb857149ae8e0f46dd1c2aa, type: 3}
+  tileDistance: 0.8
   xSize: 9
   ySize: 9
+  nextXSize: 9
+  nextYSize: 9
