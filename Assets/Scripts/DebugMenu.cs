@@ -19,12 +19,17 @@ public class DebugMenu : MonoBehaviour
     
     public Grid grid;
     public TMP_Dropdown placeDropdown;
+    public Slider xSlider;
+    public Slider ySlider;
 
     public PlaceType selectedPlaceType;
 
     private void Awake()
     {
         instance = this;
+
+        xSlider.onValueChanged.AddListener(XSizeChanged);
+        ySlider.onValueChanged.AddListener(YSizeChanged);
     }
 
     public void ResetButton()
@@ -40,5 +45,15 @@ public class DebugMenu : MonoBehaviour
     public void PlaceTypeChanged()
     {
         selectedPlaceType = (PlaceType)placeDropdown.value;
+    }
+
+    public void XSizeChanged(Single value)
+    {
+        grid.nextXSize = (int)value;
+    }
+    
+    public void YSizeChanged(Single value)
+    {
+        grid.nextYSize = (int)value;
     }
 }

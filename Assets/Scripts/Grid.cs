@@ -17,6 +17,9 @@ public class Grid : MonoBehaviour
     public float tileDistance = 0.8f;
     public int xSize = 9;
     public int ySize = 9;
+
+    public int nextXSize = 9;
+    public int nextYSize = 9;
     
     // Start is called before the first frame update
     void Start()
@@ -80,15 +83,7 @@ public class Grid : MonoBehaviour
 
    public  Vector2 GetTilePosition(Tile tile)
     {
-        foreach (KeyValuePair<Vector2, Tile> pair in tiles)
-        {
-            if (tile == pair.Value)
-            {
-                return pair.Key;
-            }
-        }
-        
-        return Vector2.zero;
+        return tile.gridPosition;
     }
     
     public List<Tile> FindNeighbors(Tile tile)
@@ -108,7 +103,6 @@ public class Grid : MonoBehaviour
                 
                 // make the neighbor point
                 Vector2 neighborPos = new Vector2(currentPos.x + x, currentPos.y + y);
-                
                
                 // check if its in the grid list which means that its a valid tile
                 if (tiles.TryGetValue(neighborPos,  out Tile neighborTile) &&  !neighborTile.GetFill())
@@ -152,20 +146,32 @@ public class Grid : MonoBehaviour
 
     void PlaceTiles()
     {
+        xSize = nextXSize;
+        ySize = nextYSize;
+        
         for (int x = 0; x < xSize; x++)
         {
             for (int y = 0; y < ySize; y++)
             {
                 // Create new tile
                 GameObject newTile = Instantiate(tilePrefab);
-                tiles.Add(new Vector2(x, y), newTile.GetComponent<Tile>());
+                Tile newTileComponent = newTile.GetComponent<Tile>();
+                Vector2 newTileGridPosition = new Vector2(x, y);
+                
+                // Add to dictionary of tiles
+                tiles.Add(newTileGridPosition, newTileComponent);
                 
                 // Setup position
                 newTile.transform.parent = transform;
                 newTile.transform.localPosition = new Vector3(x * tileDistance, y * tileDistance, 0);
-                newTile.transform.localPosition -= new Vector3((xSize / 2) * tileDistance, (ySize / 2) * tileDistance, 0);
+                float xMod = 0;
+                if (xSize % 2 == 0) xMod = -0.5f;
+                float yMod = 0;
+                if (ySize % 2 == 0) yMod = -0.5f;
+                newTile.transform.localPosition -= new Vector3(((xSize / 2) + xMod) * tileDistance, ((ySize / 2) + yMod) * tileDistance, 0);
                 
-                
+                // Give the tile its grid position
+                newTileComponent.gridPosition = newTileGridPosition;
                 
                 // Give each tile a name
                 newTile.name = "Tile " + x + ", " + y;

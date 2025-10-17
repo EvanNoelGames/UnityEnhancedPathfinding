@@ -9,8 +9,9 @@ public class Tile : MonoBehaviour
     public GameObject plane;
     public TextMeshPro textMesh;
 
+    public Vector2 gridPosition;
+    
     private float weight = 1.0f;
-
     private Material planeMaterial;
     
     void Start()
