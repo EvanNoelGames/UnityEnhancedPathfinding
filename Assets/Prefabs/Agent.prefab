@@ -45,7 +45,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b57653b6b2f00304780361e33763e681, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  plane: {fileID: 4708485697391437618}
+  pathMaterial: {fileID: 2100000, guid: cb5729b0690d36448a395bf32241f527, type: 2}
+  baseAgentMaterial: {fileID: 2100000, guid: d8582a3b18123cd46a6447449cfe05ee, type: 2}
+  isPathFinding: 1
   path: []
+  tilePath: []
+  targetTile: {fileID: 0}
+  currentTile: {fileID: 0}
 --- !u!1 &4708485697391437618
 GameObject:
   m_ObjectHideFlags: 0
