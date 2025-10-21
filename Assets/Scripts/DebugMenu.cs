@@ -21,6 +21,7 @@ public class DebugMenu : MonoBehaviour
     public TMP_Dropdown placeDropdown;
     public Slider xSlider;
     public Slider ySlider;
+    public Button runButton;
 
     public PlaceType selectedPlaceType;
 
@@ -35,11 +36,21 @@ public class DebugMenu : MonoBehaviour
     public void ResetButton()
     {
         grid.SetupBoard();
+        
+        // User can change values again
+        placeDropdown.interactable = true;
+        runButton.interactable = true;
     }
 
     public void RunButton()
     {
-        grid.RunSimulation();
+        // Exit if simulation cannot run
+        if (!grid.RunSimulation()) return;
+
+        // Prevent user from changing values while simulation running
+        placeDropdown.value = 0;
+        placeDropdown.interactable = false;
+        runButton.interactable = false;
     }
 
     public void PlaceTypeChanged()

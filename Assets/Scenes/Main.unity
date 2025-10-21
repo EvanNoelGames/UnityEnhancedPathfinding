@@ -1120,6 +1120,7 @@ MonoBehaviour:
   placeDropdown: {fileID: 378310763}
   xSlider: {fileID: 188297066}
   ySlider: {fileID: 1479130875}
+  runButton: {fileID: 213826830}
   selectedPlaceType: 0
 --- !u!114 &578421469 stripped
 MonoBehaviour:

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class Grid : MonoBehaviour
@@ -9,9 +10,24 @@ public class Grid : MonoBehaviour
     
     AStar astar = new AStar();
 
+    // Used for when the user is placing tile
+    private GameObject lastClickedTile;
+    private enum FillingType
+    {
+        NONE,
+        FILLING,
+        CLEARING
+    }
+    private FillingType fillingTileType = FillingType.NONE;
+    
+    private List<Tile> visiblePath = new List<Tile>();
+    
     private Tile startTile;
     private Tile exitTile;
     private GameObject agent;
+    private Agent agentComponent; // Spawns where user selects
+    private GameObject pathAgent;
+    private Agent pathAgentComponent; // Spawns at starting tile
     private Tile agentTile;
     
     public GameObject tilePrefab;
@@ -38,31 +54,99 @@ public class Grid : MonoBehaviour
     void ClickedTile(GameObject clickedTile)
     {
         Tile tile = clickedTile.GetComponent<Tile>();
+
+        // Ensure user doesn't place tile on top of agents
+        if (agent != null)
+        {
+            if (agentComponent.targetTile == tile || agentComponent.currentTile == tile)
+            {
+                print("Cannot place tile on agent!");
+                return;
+            }
+        }
+        if (pathAgent != null)
+        {
+            if (pathAgentComponent.targetTile == tile || pathAgentComponent.currentTile == tile)
+            {
+                print("Cannot place tile on agent!");
+                return;
+            }
+        }
         
         // Do different things depending on the placement mode
         switch (DebugMenu.instance.selectedPlaceType)
         {
             case DebugMenu.PlaceType.ENTRANCE:
                 // Place entrance
+                // Destory previous entrance
                 if (startTile != null)
                     startTile.Reset();
+                // Destroy agent if on tile
+                if (tile == agentTile)
+                    Destroy(agent);
+                // Reset exit if its the exit tile
+                if (tile == exitTile)
+                {
+                    exitTile.Reset();
+                    exitTile = null;
+                }
                 tile.SetStart();
                 startTile = tile;
                 break;
             case DebugMenu.PlaceType.EXIT:
                 // Place exit
+                // Destroy previous exit
                 if (exitTile != null)
                     exitTile.Reset();
+                // Destroy agent if on tile
+                if (tile == agentTile)
+                    Destroy(agent);
+                // Reset start if its the start tile
+                if (tile == startTile)
+                {
+                    startTile.Reset();
+                    startTile = null;
+                }
                 tile.SetExit();
                 exitTile = tile;
                 break;
             case DebugMenu.PlaceType.FILL:
+                // Destroy agent if on tile
+                if (tile == agentTile)
+                    Destroy(agent);
+                // Reset exit if its the exit tile
+                if (tile == exitTile)
+                {
+                    exitTile.Reset();
+                    exitTile = null;
+                }
+                // Reset start if its the start tile
+                if (tile == startTile)
+                {
+                    startTile.Reset();
+                    startTile = null;
+                }
                 // Toggle tile fill
                 tile.SetFill(!tile.GetFill());
                 break;
             case DebugMenu.PlaceType.AGENT:
                 if (agent != null)
                     Destroy(agent);
+                // Reset exit if its the exit tile
+                if (tile == exitTile)
+                {
+                    exitTile.Reset();
+                    exitTile = null;
+                }
+                // Reset start if its the start tile
+                if (tile == startTile)
+                {
+                    startTile.Reset();
+                    startTile = null;
+                }
+                // Clear if filled
+                if (tile.GetFill())
+                    tile.Reset();
                 CreateAgent(clickedTile);
                 break;
         }
@@ -71,14 +155,17 @@ public class Grid : MonoBehaviour
     void CreateAgent(GameObject spawnTile)
     {
         agent = Instantiate(agentPrefab);
-        agent.transform.position = spawnTile.transform.position - Vector3.forward;
+        agent.transform.position = new Vector3(spawnTile.transform.position.x, spawnTile.transform.position.y, -3);
+        agentComponent = agent.GetComponent<Agent>();
+        agentComponent.isPathFinding = false;
+        agentComponent.grid = this;
         agentTile = spawnTile.GetComponent<Tile>();
     }
 
     void CheckForClick()
     {
-        // Left click
-        if (Input.GetMouseButtonDown(0))
+        // Left click pressed not in fill mode
+        if (DebugMenu.instance.selectedPlaceType != DebugMenu.PlaceType.FILL && Input.GetMouseButtonDown(0))
         {
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             RaycastHit hit;
@@ -90,6 +177,42 @@ public class Grid : MonoBehaviour
                     ClickedTile(hit.collider.gameObject);
                 }
             }
+        }
+        // Left click held in fill mode
+        else if (Input.GetMouseButton(0))
+        {
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            RaycastHit hit;
+
+            if (Physics.Raycast(ray, out hit))
+            {
+                if (hit.collider.CompareTag("Tile") && lastClickedTile != hit.collider.gameObject)
+                {
+                    Tile clickedTileComponent = hit.collider.gameObject.GetComponent<Tile>();
+
+                    // Set new fill type
+                    if (fillingTileType == FillingType.NONE)
+                    {
+                        if (clickedTileComponent.GetFill())
+                            fillingTileType = FillingType.CLEARING;
+                        else
+                            fillingTileType = FillingType.FILLING;
+                    }
+                    
+                    // Tile type is the same
+                    if (fillingTileType == FillingType.CLEARING && clickedTileComponent.GetFill() ||
+                        fillingTileType == FillingType.FILLING && !clickedTileComponent.GetFill())
+                    {
+                        lastClickedTile = hit.collider.gameObject;
+                        ClickedTile(hit.collider.gameObject);
+                    }
+                }
+            }
+        }
+        else
+        {
+            fillingTileType = FillingType.NONE;
+            lastClickedTile = null;
         }
     }
 
@@ -131,6 +254,8 @@ public class Grid : MonoBehaviour
     {
         if (agent != null)
             Destroy(agent);
+        if (pathAgent != null)
+            Destroy(pathAgent);
         
         ClearBoard();
         PlaceTiles();
@@ -155,7 +280,7 @@ public class Grid : MonoBehaviour
                 
                 // Setup position
                 newTile.transform.parent = transform;
-                newTile.transform.localPosition = new Vector3(x * tileDistance, y * tileDistance, 0);
+                newTile.transform.localPosition = new Vector3(x * tileDistance, y * tileDistance, 1);
                 float xMod = 0;
                 if (xSize % 2 == 0) xMod = -0.5f;
                 float yMod = 0;
@@ -184,12 +309,12 @@ public class Grid : MonoBehaviour
     }
     #endregion
     
-    public void RunSimulation()
+    public bool RunSimulation()
     {
         if (startTile == null || exitTile == null)
         {
             Debug.LogWarning("Start and Exit Tile arent set!");
-            return;
+            return false;
         }
         
         List<Tile> path = astar.FindPath(startTile, exitTile, this);
@@ -197,26 +322,85 @@ public class Grid : MonoBehaviour
         // Agent's path
         if (agent != null)
         {
-            List<Tile> agentPath = astar.FindPath(agentTile, exitTile, this);
+            List<Tile> agentPath = astar.FindPath(agentTile, startTile, this);
             
             if (agentPath.Count == 0)
             {
                 Debug.Log("No path found for agent!");
-                return;
+                return false;
             }
             
-            agent.GetComponent<Agent>().BeginWalk(agentPath);
+            agentComponent.BeginWalk(agentPath);
         }
         
         if (path.Count == 0)
         {
             Debug.Log("No path found!");
-            return;
+            return false;
         }
+        
+        // Spawn the pathing agent
+        pathAgent = Instantiate(agentPrefab);
+        pathAgent.transform.position = new Vector3(startTile.transform.position.x, startTile.transform.position.y, -3);
+        pathAgentComponent = pathAgent.GetComponent<Agent>();
+        pathAgentComponent.BeginWalk(path);
+        pathAgentComponent.grid = this;
+        startTile.Reset();
 
-        foreach (var tile in path)
+        SetVisiblePath(path);
+        
+        return true;
+    }
+
+    public void SetVisiblePath(List<Tile> path)
+    {
+        ClearVisiblePath();
+        visiblePath = new List<Tile>(path);
+        
+        foreach (var tile in visiblePath)
         {
-            tile.SetPath();
+            if (!tile.GetExit())
+                tile.SetPath();
         }
+    }
+    
+    void ClearVisiblePath()
+    {
+        foreach (var tile in visiblePath)
+        {
+            if (!tile.GetFill() && !tile.GetExit())
+                tile.Reset();
+        }
+        
+        visiblePath.Clear();
+    }
+
+    public void PathfindingAgentUpdatedPosition()
+    {
+        if (agent != null)
+        {
+            Tile targetTile = pathAgentComponent.currentTile;
+            // Shoot ahead if we can
+            if (pathAgentComponent.targetTile != null)
+                targetTile  = pathAgentComponent.targetTile;
+            List<Tile> path = astar.FindPath(agentComponent.targetTile, targetTile, this);
+            agentComponent.UpdatePath(path);
+        }
+    }
+
+    public void AgentUpdatedPosition()
+    {
+        // Agents are touching
+        if (pathAgent != null && agent != null && agentComponent.currentTile == pathAgentComponent.currentTile)
+        {
+            Destroy(pathAgent);
+            List<Tile> path = astar.FindPath(agentComponent.targetTile, exitTile, this);
+            agentComponent.UpdatePath(path);
+        }
+    }
+
+    public bool PathFinderAlive()
+    {
+        return pathAgent != null;
     }
 }

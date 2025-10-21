@@ -42,6 +42,11 @@ public class Tile : MonoBehaviour
     {
         planeMaterial.color = Color.red;
     }
+
+    public bool GetExit()
+    {
+        return planeMaterial.color == Color.red;
+    }
     
     public void SetFill(bool fill)
     {
