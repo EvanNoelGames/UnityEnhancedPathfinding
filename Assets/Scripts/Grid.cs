@@ -216,6 +216,11 @@ public class Grid : MonoBehaviour
         }
     }
 
+    public Tile GetTileAtPosition(Vector2 position)
+    {
+        return tiles.GetValueOrDefault(position);
+    }
+
    public  Vector2 GetTilePosition(Tile tile)
     {
         return tile.gridPosition;

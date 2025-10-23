@@ -1,6 +1,4 @@
-using System.Collections;
 using System.Collections.Generic;
-using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using Utils;
 
@@ -63,8 +61,8 @@ public class ThetaStar
                 {
                     if (!_openSet.Contains(neighbor))
                     {
-                        TilePrioritized neighborPriortized = new TilePrioritized();
-                        neighborPriortized.GCost = float.MaxValue;
+                        TilePrioritized neighborPrioritized = new TilePrioritized();
+                        neighborPrioritized.GCost = float.MaxValue;
                         _parents[neighbor] = null;
                     }
                     UpdateVertex(current, neighbor);
@@ -93,17 +91,48 @@ public class ThetaStar
 
     List<Tile> UpdateVertex(TilePrioritized current, Tile neighbor)
     {
-        if (lineOfSight(current.Parent, neighbor))
+        if (LineOfSight(current.Parent, neighbor))
         {
             
         }
         return  new List<Tile>();
     }
 
-    bool lineOfSight(Tile from, Tile to)
+    bool LineOfSight(Tile from, Tile to)
     {
+        Vector2 startPos = from.gridPosition;
+        Vector2 endPos = to.gridPosition;
         
+        // calculate the difference
+        var dx = endPos.x - startPos.x;
+        var dy = endPos.y - startPos.y;
         
-        return false;
+        var steps = Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dy));
+        
+        var xInc = dx / steps;
+        var yInc = dy / steps;
+
+        var currentX = startPos.x;
+        var currentY = startPos.y;
+
+        for (int i = 0; i < steps; ++i)
+        {
+            var gridX = Mathf.Round(currentX);
+            var gridY = Mathf.Round(currentY);
+            
+            Tile tile = _grid.GetTileAtPosition(new Vector2(gridX, gridY));
+            if (tile != null && tile != from && tile != to)
+            {
+                if (tile.GetFill())
+                {
+                    return false;
+                }
+                
+         
+            }
+            currentX += xInc;
+            currentY += yInc;
+        }
+        return true;
     }
 }
