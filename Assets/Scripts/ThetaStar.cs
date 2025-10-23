@@ -35,6 +35,7 @@ public class ThetaStar
         _open =  new PriorityQueue<TilePrioritized, float>();
         _openSet = new HashSet<Tile>();
         _closed = new HashSet<Tile>();
+        _parents = new Dictionary<Tile, Tile>();
         
         TilePrioritized startTile = new TilePrioritized();
         startTile.Tile = start;
@@ -49,7 +50,7 @@ public class ThetaStar
 
             if (current.Tile == goal)
             {
-                //return _parents[current.Tile];
+                return ReconstructedPath(start, goal);
             }
             
             _closed.Add(current.Tile);
@@ -58,23 +59,51 @@ public class ThetaStar
 
             foreach (var neighbor in currentNeighbors)
             {
-                if (!_closed.Contains(neighbor) && !_openSet.Contains(neighbor))
+                if (!_closed.Contains(neighbor))
                 {
-                    float currentGCost = Heuristic(start.gridPosition, neighbor.gridPosition);
-                    float neighborGCost = currentGCost + Heuristic(current.Tile.gridPosition, neighbor.gridPosition);
-                    TilePrioritized neighborPriortized = new TilePrioritized();
-                    neighborPriortized.Tile = neighbor;
-                    neighborPriortized.GCost = neighborGCost;
-                    _parents[neighbor] = current.Tile;
-                    neighborPriortized.Parent = current.Tile;
-                    
-                    
-                    _open.Enqueue(neighborPriortized, neighborGCost);
-                    _openSet.Add(neighbor);
+                    if (!_openSet.Contains(neighbor))
+                    {
+                        TilePrioritized neighborPriortized = new TilePrioritized();
+                        neighborPriortized.GCost = float.MaxValue;
+                        _parents[neighbor] = null;
+                    }
+                    UpdateVertex(current, neighbor);
                 }
             }
         }
-
         return null;
+    }
+
+    List<Tile> ReconstructedPath (Tile start, Tile goal)
+    {
+        List<Tile> path = new List<Tile>();
+
+        Tile currentTile = goal;
+
+        while (currentTile != start)
+        {
+            path.Add(currentTile);
+            currentTile = _parents[currentTile];
+        }
+
+        path.Add(start);
+        path.Reverse();
+        return path;
+    }
+
+    List<Tile> UpdateVertex(TilePrioritized current, Tile neighbor)
+    {
+        if (lineOfSight(current.Parent, neighbor))
+        {
+            
+        }
+        return  new List<Tile>();
+    }
+
+    bool lineOfSight(Tile from, Tile to)
+    {
+        
+        
+        return false;
     }
 }
