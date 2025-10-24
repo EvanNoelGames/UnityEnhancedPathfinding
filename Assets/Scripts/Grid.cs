@@ -9,6 +9,7 @@ public class Grid : MonoBehaviour
     private Dictionary<Vector2, Tile> tiles = new Dictionary<Vector2, Tile>();
     
     AStar astar = new AStar();
+    ThetaStar thetaStar = new ThetaStar();
 
     // Used for when the user is placing tile
     private GameObject lastClickedTile;
@@ -216,6 +217,11 @@ public class Grid : MonoBehaviour
         }
     }
 
+    public Tile GetTileAtPosition(Vector2 position)
+    {
+        return tiles.GetValueOrDefault(position);
+    }
+
    public  Vector2 GetTilePosition(Tile tile)
     {
         return tile.gridPosition;
@@ -318,6 +324,7 @@ public class Grid : MonoBehaviour
         }
         
         List<Tile> path = astar.FindPath(startTile, exitTile, this);
+        List<Tile> thetaPath = thetaStar.FindPath(startTile,exitTile, this);
 
         // Agent's path
         if (agent != null)
@@ -348,6 +355,7 @@ public class Grid : MonoBehaviour
         startTile.Reset();
 
         SetVisiblePath(path);
+        SetVisiblePath(thetaPath);
         
         return true;
     }
