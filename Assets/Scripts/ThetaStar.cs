@@ -28,19 +28,24 @@ public class ThetaStar
     private Dictionary<Tile, Tile> _parents;
     Grid _grid;
     
-    List<Tile> FindPath(Tile start, Tile goal)
+    public List<Tile> FindPath(Tile start, Tile goal, Grid grid)
     {
         _open =  new PriorityQueue<TilePrioritized, float>();
         _openSet = new HashSet<Tile>();
         _closed = new HashSet<Tile>();
         _parents = new Dictionary<Tile, Tile>();
+        _bestGCost = new Dictionary<Tile, float>();
+        _grid = grid;
         
         TilePrioritized startTile = new TilePrioritized();
         startTile.Tile = start;
         startTile.GCost = 0;
         startTile.Parent = start;
         
+        _bestGCost[start] = 0;
+        
         _open.Enqueue( startTile, startTile.GCost + Heuristic(start.gridPosition, goal.gridPosition));
+        _openSet.Add(startTile.Tile);
         
         while (_open.Count != 0)
         {
@@ -59,13 +64,17 @@ public class ThetaStar
             {
                 if (!_closed.Contains(neighbor))
                 {
+                    TilePrioritized neighborPrioritized = new TilePrioritized();
+                    neighborPrioritized.Tile = neighbor;
                     if (!_openSet.Contains(neighbor))
                     {
-                        TilePrioritized neighborPrioritized = new TilePrioritized();
+                        
                         neighborPrioritized.GCost = float.MaxValue;
+                        _bestGCost[neighbor] = float.MaxValue;
                         _parents[neighbor] = null;
+                        _openSet.Add(neighbor);
                     }
-                    UpdateVertex(current, neighbor);
+                    UpdateVertex(current, neighborPrioritized, goal);
                 }
             }
         }
@@ -89,13 +98,46 @@ public class ThetaStar
         return path;
     }
 
-    List<Tile> UpdateVertex(TilePrioritized current, Tile neighbor)
+    void UpdateVertex(TilePrioritized current, TilePrioritized neighbor, Tile goal)
     {
-        if (LineOfSight(current.Parent, neighbor))
+        float currentToNeighborCost = Heuristic(current.Tile.gridPosition, neighbor.Tile.gridPosition);
+        float parentToNeighborCost = Heuristic(current.Parent.gridPosition, neighbor.Tile.gridPosition);
+        
+        if (LineOfSight(current.Parent, neighbor.Tile))
         {
-            
+            if (_bestGCost[current.Parent] + parentToNeighborCost < _bestGCost[neighbor.Tile])
+            {
+                neighbor.GCost = _bestGCost[current.Parent] + parentToNeighborCost;
+                neighbor.Parent = current.Parent;
+                
+                _parents[neighbor.Tile] = neighbor.Parent;
+                _bestGCost[neighbor.Tile] = neighbor.GCost;
+                
+                if (_openSet.Contains(neighbor.Tile))
+                {
+                    _openSet.Remove(neighbor.Tile);
+                }
+
+                float hCost = Heuristic(neighbor.Tile.gridPosition, goal.gridPosition);
+                _open.Enqueue(neighbor, neighbor.GCost +  hCost);
+            }
         }
-        return  new List<Tile>();
+        
+        else if (_bestGCost[current.Tile] + currentToNeighborCost < _bestGCost[neighbor.Tile])
+        {
+            neighbor.GCost = _bestGCost[current.Tile] + currentToNeighborCost;
+            neighbor.Parent = current.Tile;
+            
+            _parents[neighbor.Tile] = neighbor.Parent;
+            _bestGCost[neighbor.Tile] = neighbor.GCost;
+            
+            if (_openSet.Contains(neighbor.Tile))
+            {
+                _openSet.Remove(neighbor.Tile);
+            }
+            float hCost = Heuristic(neighbor.Tile.gridPosition, goal.gridPosition);
+            _open.Enqueue(neighbor, neighbor.GCost +  hCost);
+        }
     }
 
     bool LineOfSight(Tile from, Tile to)
