@@ -50,7 +50,8 @@ public class ThetaStar
         while (_open.Count != 0)
         {
             TilePrioritized current = _open.Dequeue();
-
+            
+            // when the goal is reached return the constructed path
             if (current.Tile == goal)
             {
                 return ReconstructedPath(start, goal);
@@ -60,6 +61,7 @@ public class ThetaStar
             
             List<Tile> currentNeighbors = _grid.FindNeighbors(current.Tile);
 
+            // for all of the neighbors of the current tile check that they havent been vistied and arent about to be visted 
             foreach (var neighbor in currentNeighbors)
             {
                 if (!_closed.Contains(neighbor))
@@ -81,6 +83,7 @@ public class ThetaStar
         return new List<Tile>();
     }
 
+    // construct a path from the goal to the start 
     List<Tile> ReconstructedPath (Tile start, Tile goal)
     {
         List<Tile> path = new List<Tile>();
@@ -92,27 +95,33 @@ public class ThetaStar
             path.Add(currentTile);
             currentTile = _parents[currentTile];
         }
-
+        
         path.Add(start);
         path.Reverse();
         return path;
     }
 
+    // Uses the line of Sight function and Heuristics to find the best possible path
     void UpdateVertex(TilePrioritized current, TilePrioritized neighbor, Tile goal)
     {
+        
         float currentToNeighborCost = Heuristic(current.Tile.gridPosition, neighbor.Tile.gridPosition);
         float parentToNeighborCost = Heuristic(current.Parent.gridPosition, neighbor.Tile.gridPosition);
         
+        // if line of sight is found from the parent to the neighbor  
         if (LineOfSight(current.Parent, neighbor.Tile))
         {
+            // if the path from parent to neighbor is cheaper then the best currently know path
             if (_bestGCost[current.Parent] + parentToNeighborCost < _bestGCost[neighbor.Tile])
             {
+                // update the neighbors parent with the current tiles parent and its cost
                 neighbor.GCost = _bestGCost[current.Parent] + parentToNeighborCost;
                 neighbor.Parent = current.Parent;
                 
                 _parents[neighbor.Tile] = neighbor.Parent;
                 _bestGCost[neighbor.Tile] = neighbor.GCost;
                 
+                // removes the neighbor tile from open set so it can be correctly updated within the priority queue
                 if (_openSet.Contains(neighbor.Tile))
                 {
                     _openSet.Remove(neighbor.Tile);
@@ -123,14 +132,17 @@ public class ThetaStar
             }
         }
         
+        // if a cheaper path wasn't found use the standard A* pathfinding
         else if (_bestGCost[current.Tile] + currentToNeighborCost < _bestGCost[neighbor.Tile])
         {
+            // update the neighbors parent with the current tiles parent and its cost
             neighbor.GCost = _bestGCost[current.Tile] + currentToNeighborCost;
             neighbor.Parent = current.Tile;
             
             _parents[neighbor.Tile] = neighbor.Parent;
             _bestGCost[neighbor.Tile] = neighbor.GCost;
             
+            // removes the neighbor tile from open set so it can be correctly updated within the priority queue
             if (_openSet.Contains(neighbor.Tile))
             {
                 _openSet.Remove(neighbor.Tile);
@@ -145,18 +157,21 @@ public class ThetaStar
         Vector2 startPos = from.gridPosition;
         Vector2 endPos = to.gridPosition;
         
-        // calculate the difference
+        // calculate the difference between the end and start positions
         var dx = endPos.x - startPos.x;
         var dy = endPos.y - startPos.y;
         
+        // find the proper amount of steps to sample
         var steps = Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dy));
         
+        // divide the differences of x and y by the amount of steps
         var xInc = dx / steps;
         var yInc = dy / steps;
 
         var currentX = startPos.x;
         var currentY = startPos.y;
 
+        // loop through all the steps checking for any obstacle between from and to
         for (int i = 0; i < steps; ++i)
         {
             var gridX = Mathf.Round(currentX);
@@ -169,8 +184,6 @@ public class ThetaStar
                 {
                     return false;
                 }
-                
-         
             }
             currentX += xInc;
             currentY += yInc;
