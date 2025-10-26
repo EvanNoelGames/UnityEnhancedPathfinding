@@ -78,7 +78,7 @@ public class ThetaStar
                 }
             }
         }
-        return null;
+        return new List<Tile>();
     }
 
     List<Tile> ReconstructedPath (Tile start, Tile goal)
