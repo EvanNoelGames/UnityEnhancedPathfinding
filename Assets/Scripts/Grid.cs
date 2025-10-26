@@ -6,12 +6,14 @@ using UnityEngine;
 
 public class Grid : MonoBehaviour
 {
-    private Dictionary<Vector2, Tile> tiles = new Dictionary<Vector2, Tile>();
+    private bool running = false; // Is the sim running?
+    private Dictionary<Vector2, Tile> tiles = new Dictionary<Vector2, Tile>(); // Contains all of the tiles
     
+    public bool useTheta = false;
     AStar astar = new AStar();
     ThetaStar thetaStar = new ThetaStar();
 
-    // Used for when the user is placing tile
+    // Used for when the user is placing tiles
     private GameObject lastClickedTile;
     private enum FillingType
     {
@@ -21,7 +23,7 @@ public class Grid : MonoBehaviour
     }
     private FillingType fillingTileType = FillingType.NONE;
     
-    private List<Tile> visiblePath = new List<Tile>();
+    private List<Tile> visiblePath = new List<Tile>(); // Tiles that draw the current visible path
     
     private Tile startTile;
     private Tile exitTile;
@@ -30,6 +32,9 @@ public class Grid : MonoBehaviour
     private GameObject pathAgent;
     private Agent pathAgentComponent; // Spawns at starting tile
     private Tile agentTile;
+
+    private List<Vector3> linePositions = new List<Vector3>();
+    public LineRenderer lineRenderer; // Line used to draw theta* path
     
     public GameObject tilePrefab;
     public GameObject agentPrefab;
@@ -41,7 +46,6 @@ public class Grid : MonoBehaviour
     public int nextXSize = 9;
     public int nextYSize = 9;
     
-    // Start is called before the first frame update
     void Start()
     {
         SetupBoard();
@@ -50,8 +54,18 @@ public class Grid : MonoBehaviour
     void Update()
     {
         CheckForClick();
+        
+        if (running && useTheta)
+            DrawThetaLine();
     }
 
+    #region HELPERS
+
+    List<Tile> FindPath(Tile start, Tile goal)
+    {
+        return useTheta ? thetaStar.FindPath(start, goal, this) : astar.FindPath(start, goal, this);
+    }
+    
     void ClickedTile(GameObject clickedTile)
     {
         Tile tile = clickedTile.GetComponent<Tile>();
@@ -59,7 +73,7 @@ public class Grid : MonoBehaviour
         // Ensure user doesn't place tile on top of agents
         if (agent != null)
         {
-            if (agentComponent.targetTile == tile || agentComponent.currentTile == tile)
+            if (running && (agentComponent.targetTile == tile || agentComponent.currentTile == tile))
             {
                 print("Cannot place tile on agent!");
                 return;
@@ -127,8 +141,7 @@ public class Grid : MonoBehaviour
                     startTile.Reset();
                     startTile = null;
                 }
-                // Toggle tile fill
-                tile.SetFill(!tile.GetFill());
+                FillTile(tile);
                 break;
             case DebugMenu.PlaceType.AGENT:
                 if (agent != null)
@@ -153,14 +166,121 @@ public class Grid : MonoBehaviour
         }
     }
 
+    void FillTile(Tile tile)
+    {
+        bool visibleAgentPath = false;
+        
+        // Toggle tile fill
+        tile.SetFill(!tile.GetFill());
+
+        // Update or set Agent path
+        if (agent != null && running)
+        {
+            List<Tile> newAgentPath =  new List<Tile>();
+            
+            // If we already have a path, update it
+            if (agentComponent.path.Count != 0)
+            {
+                newAgentPath = FindPath(agentComponent.targetTile, agentComponent.tilePath[agentComponent.tilePath.Count - 1]);
+            }
+            
+            if (agentComponent.path.Count == 0 || newAgentPath.Count == 0)
+            {
+                // Try to go to exit if path agent isn't available
+                if (pathAgent == null)
+                {
+                    newAgentPath = FindPath(agentComponent.currentTile, exitTile);
+                }
+                // Else go to path agent
+                else
+                {
+                    newAgentPath = FindPath(agentComponent.currentTile, pathAgentComponent.currentTile);
+                    
+                    // If path agent is blocked try going to exit
+                    if (newAgentPath.Count == 0)
+                    {
+                        newAgentPath = FindPath(agentComponent.currentTile, exitTile);
+                        
+                        // If this works, update the visible path
+                        if (newAgentPath.Count != 0)
+                        {
+                            visibleAgentPath = true;
+                            if (!useTheta)
+                                SetVisiblePath(newAgentPath);
+                            else
+                                UpdateLine(newAgentPath);
+                        }
+                    }
+                }
+            }
+            
+            // Nowhere to go, pause
+            if (newAgentPath.Count == 0)
+            {
+                agentComponent.ForceEndWalk();
+                
+                if (pathAgent == null)
+                    ClearVisiblePath();
+            }
+            // Otherwise continue walking
+            else
+            {
+                agentComponent.UpdatePath(newAgentPath);
+                
+                if (pathAgent == null && !useTheta)
+                    SetVisiblePath(newAgentPath);
+                else
+                    UpdateLine(newAgentPath);
+            }
+        }
+        
+        // Update or set Path Agent path
+        if (pathAgent != null)
+        {
+            List<Tile> newPathfindingAgentPath = new List<Tile>();
+            
+            // If we already have a path, update it
+            if (pathAgentComponent.path.Count != 0)
+            {
+                newPathfindingAgentPath = FindPath(pathAgentComponent.targetTile, pathAgentComponent.tilePath[pathAgentComponent.tilePath.Count - 1]);
+            }
+            // Otherwise make one
+            else
+            {
+                newPathfindingAgentPath = FindPath(pathAgentComponent.currentTile, exitTile);
+            }
+        
+            // No available path, pause
+            if (newPathfindingAgentPath.Count == 0)
+            {
+                pathAgentComponent.ForceEndWalk();
+                if (!visibleAgentPath)
+                {
+                    ClearVisiblePath();
+                }
+            }
+            // Otherwise continue
+            else
+            {
+                pathAgentComponent.UpdatePath(newPathfindingAgentPath);
+                if (!useTheta)
+                    SetVisiblePath(newPathfindingAgentPath);
+                else
+                    UpdateLine(newPathfindingAgentPath);
+            }
+        }
+    }
+
     void CreateAgent(GameObject spawnTile)
     {
+        // Setup agent
         agent = Instantiate(agentPrefab);
         agent.transform.position = new Vector3(spawnTile.transform.position.x, spawnTile.transform.position.y, -3);
         agentComponent = agent.GetComponent<Agent>();
         agentComponent.isPathFinding = false;
         agentComponent.grid = this;
         agentTile = spawnTile.GetComponent<Tile>();
+        agentComponent.currentTile = agentTile;
     }
 
     void CheckForClick()
@@ -222,7 +342,7 @@ public class Grid : MonoBehaviour
         return tiles.GetValueOrDefault(position);
     }
 
-   public  Vector2 GetTilePosition(Tile tile)
+    public  Vector2 GetTilePosition(Tile tile)
     {
         return tile.gridPosition;
     }
@@ -254,10 +374,14 @@ public class Grid : MonoBehaviour
         }
         return neighbors;
     }
+    
+    #endregion
 
     #region SETUP
     public void SetupBoard()
     {
+        running = false;
+        
         if (agent != null)
             Destroy(agent);
         if (pathAgent != null)
@@ -315,6 +439,7 @@ public class Grid : MonoBehaviour
     }
     #endregion
     
+    #region SIMULATION
     public bool RunSimulation()
     {
         if (startTile == null || exitTile == null)
@@ -323,40 +448,63 @@ public class Grid : MonoBehaviour
             return false;
         }
         
-        List<Tile> path = astar.FindPath(startTile, exitTile, this);
-        List<Tile> thetaPath = thetaStar.FindPath(startTile,exitTile, this);
+        List<Tile> path = FindPath(startTile, exitTile);
 
         // Agent's path
         if (agent != null)
         {
-            List<Tile> agentPath = astar.FindPath(agentTile, startTile, this);
+            List<Tile> agentPath = FindPath(agentTile, startTile);
             
             if (agentPath.Count == 0)
             {
-                Debug.Log("No path found for agent!");
-                return false;
+                agentPath = FindPath(agentTile, exitTile);
+
+                if (agentPath.Count == 0)
+                {
+                    Debug.Log("No path found for agent!");
+                }
+                else
+                {
+                    agentComponent.BeginWalk(agentPath);
+                    if (!useTheta)
+                        SetVisiblePath(agentPath);
+                    else
+                        UpdateLine(agentPath);
+                }
             }
-            
-            agentComponent.BeginWalk(agentPath);
-        }
-        
-        if (path.Count == 0)
-        {
-            Debug.Log("No path found!");
-            return false;
+            else
+            {
+                agentComponent.BeginWalk(agentPath);
+                if (!useTheta)
+                    SetVisiblePath(agentPath);
+                else
+                    UpdateLine(agentPath);
+            }
         }
         
         // Spawn the pathing agent
         pathAgent = Instantiate(agentPrefab);
         pathAgent.transform.position = new Vector3(startTile.transform.position.x, startTile.transform.position.y, -3);
         pathAgentComponent = pathAgent.GetComponent<Agent>();
-        pathAgentComponent.BeginWalk(path);
         pathAgentComponent.grid = this;
+        pathAgentComponent.Setup();
+        pathAgentComponent.currentTile = startTile;
         startTile.Reset();
-
-        SetVisiblePath(path);
-        SetVisiblePath(thetaPath);
         
+        if (path.Count == 0)
+        {
+            Debug.Log("No path found for pathing agent!");
+        }
+        else
+        {
+            pathAgentComponent.BeginWalk(path);
+            if (!useTheta)
+                SetVisiblePath(path);
+            else
+                UpdateLine(path);
+        }
+
+        running = true;
         return true;
     }
 
@@ -369,6 +517,48 @@ public class Grid : MonoBehaviour
         {
             if (!tile.GetExit())
                 tile.SetPath();
+        }
+    }
+
+    public void UpdateLine(List<Tile> positions)
+    {
+        List<Vector3> line = new List<Vector3>();
+
+        foreach (var tile in positions)
+        {
+            line.Add(tile.transform.position + Vector3.back * 10);
+        }
+        
+        linePositions = line;
+    }
+
+    void DrawThetaLine()
+    {
+        lineRenderer.positionCount = linePositions.Count + 1; // +1 because we include the agent's position
+        lineRenderer.endWidth = 0.1f;
+        lineRenderer.startWidth = 0.1f;
+        
+        // Draw line on path finder
+        if (PathFinderActive())
+        {
+            lineRenderer.GameObject().SetActive(true);
+            lineRenderer.SetPosition(0, pathAgent.transform.position);
+        }
+        // Draw line on agent
+        else if (agent != null)
+        {
+            lineRenderer.GameObject().SetActive(true);
+            lineRenderer.SetPosition(0, agent.transform.position);
+        }
+        else
+        {
+            lineRenderer.GameObject().SetActive(false);
+            return;
+        }
+
+        for (int i = 1; i <= linePositions.Count; i++) // start at 1 because 0 is the agent's position, go from there
+        {
+            lineRenderer.SetPosition(i, linePositions[i-1]);
         }
     }
     
@@ -385,30 +575,35 @@ public class Grid : MonoBehaviour
 
     public void PathfindingAgentUpdatedPosition()
     {
+        // Update follow agent if its spawned
         if (agent != null)
         {
             Tile targetTile = pathAgentComponent.currentTile;
             // Shoot ahead if we can
             if (pathAgentComponent.targetTile != null)
                 targetTile  = pathAgentComponent.targetTile;
-            List<Tile> path = astar.FindPath(agentComponent.targetTile, targetTile, this);
-            agentComponent.UpdatePath(path);
+            List<Tile> path = FindPath(agentComponent.targetTile, targetTile);
+            
+            if (path.Count != 0)
+                agentComponent.UpdatePath(path);
         }
     }
 
-    public void AgentUpdatedPosition()
+    public void AgentsColliding()
     {
-        // Agents are touching
-        if (pathAgent != null && agent != null && agentComponent.currentTile == pathAgentComponent.currentTile)
-        {
-            Destroy(pathAgent);
-            List<Tile> path = astar.FindPath(agentComponent.targetTile, exitTile, this);
+        ClearVisiblePath();
+        Destroy(pathAgent);
+        
+        // See if there's a path to the exit
+        List<Tile> path = FindPath(agentComponent.targetTile, exitTile);
+        if (path.Count != 0)
             agentComponent.UpdatePath(path);
-        }
     }
 
-    public bool PathFinderAlive()
+    public bool PathFinderActive()
     {
-        return pathAgent != null;
+        return pathAgent != null && pathAgentComponent.IsWalking();
     }
+    
+    #endregion
 }

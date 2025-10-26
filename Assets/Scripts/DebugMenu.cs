@@ -22,6 +22,7 @@ public class DebugMenu : MonoBehaviour
     public Slider xSlider;
     public Slider ySlider;
     public Button runButton;
+    public Toggle useTheta;
 
     public PlaceType selectedPlaceType;
 
@@ -40,6 +41,8 @@ public class DebugMenu : MonoBehaviour
         // User can change values again
         placeDropdown.interactable = true;
         runButton.interactable = true;
+        useTheta.interactable = true;
+        grid.lineRenderer.positionCount = 0;
     }
 
     public void RunButton()
@@ -51,6 +54,7 @@ public class DebugMenu : MonoBehaviour
         placeDropdown.value = 0;
         placeDropdown.interactable = false;
         runButton.interactable = false;
+        useTheta.interactable = false;
     }
 
     public void PlaceTypeChanged()
@@ -66,5 +70,10 @@ public class DebugMenu : MonoBehaviour
     public void YSizeChanged(Single value)
     {
         grid.nextYSize = (int)value;
+    }
+
+    public void UseThetaChanged()
+    {
+        grid.useTheta = useTheta.isOn;
     }
 }
