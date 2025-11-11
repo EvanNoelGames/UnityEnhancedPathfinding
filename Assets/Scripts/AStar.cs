@@ -106,4 +106,9 @@ public class AStar
         return path;
         
     }
+
+    public float GetDistance()
+    {
+        return _current.GCost;
+    }
 }
