@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &3901831765197686110
+--- !u!1 &6944632129066451513
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,43 +8,45 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 3901831765197686096}
-  - component: {fileID: 3901831765197686097}
+  - component: {fileID: 5024585928258217569}
+  - component: {fileID: 2782178565406707460}
   m_Layer: 0
-  m_Name: RTSGrid
+  m_Name: RTSGame
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &3901831765197686096
+--- !u!4 &5024585928258217569
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3901831765197686110}
+  m_GameObject: {fileID: 6944632129066451513}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 489.77332, y: 324.51556, z: -6.506071}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &3901831765197686097
+--- !u!114 &2782178565406707460
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3901831765197686110}
+  m_GameObject: {fileID: 6944632129066451513}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 79367d64b59742f48ad96d3de378c816, type: 3}
+  m_Script: {fileID: 11500000, guid: ef3d926791cab0949a36330ac54d3241, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  xSize: 9
-  ySize: 9
-  tileDistance: 0.6
-  tilePrefab: {fileID: 4762594461773941582, guid: 851731d3d1052f641a2f90a3fac825f7, type: 3}
+  grid: {fileID: 0}
+  canvas: {fileID: 0}
+  agentPrefab: {fileID: 8049734908325917611, guid: aa9416aac11849845a736060097d65e3, type: 3}
+  waypointPrefab: {fileID: 7612640739322764603, guid: d3e383c7531eca748bb65a51b66f0606, type: 3}
+  agentCost: 3
+  startingMoney: 15

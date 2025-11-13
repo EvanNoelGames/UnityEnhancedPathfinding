@@ -1,4 +1,8 @@
+using System;
+using System.Collections;
+using System.Timers;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class RTSTile : MonoBehaviour
@@ -14,19 +18,24 @@ public class RTSTile : MonoBehaviour
     [SerializeField] private GameObject plane;
     [Header("Colors")]
     [SerializeField] private Color colorBlock = Color.gray;
-    [SerializeField] private Color colorMoney =  Color.green;
+    [SerializeField] private Color colorMoney =  Color.yellow;
     [SerializeField] private Color colorNone =  Color.red;
+    [Header("Values")]
+    [SerializeField] private float moneyInterval = 1.0f;
 
     public int value = 3;
     
+    private RTSGrid grid;
+    
     private Vector2Int gridPosition;
-    private Material planeMaterial;
     private TileType tileType = TileType.None;
     private GameObject owner;
-    
-    void Start()
+
+    public event Action MoneyGet = delegate { };
+
+    public void SetGrid(RTSGrid grid)
     {
-        planeMaterial = plane.GetComponent<MeshRenderer>().material;
+        this.grid = grid;
     }
     
     #region Tile Type
@@ -37,13 +46,13 @@ public class RTSTile : MonoBehaviour
         switch (type)
         {
             case TileType.Blocked:
-                planeMaterial.color = colorBlock;
+                plane.GetComponent<MeshRenderer>().material.color = colorBlock;
                 break;
             case TileType.Money:
-                planeMaterial.color = colorMoney;
+                plane.GetComponent<MeshRenderer>().material.color = colorMoney;
                 break;
             case TileType.None:
-                planeMaterial.color = colorNone;
+                plane.GetComponent<MeshRenderer>().material.color = colorNone;
                 break;
         }
     }
@@ -55,8 +64,31 @@ public class RTSTile : MonoBehaviour
     
     public void ResetTileType()
     {
-        planeMaterial.color = colorNone;
+        plane.GetComponent<MeshRenderer>().material.color = colorNone;
         tileType = TileType.None;
+    }
+    #endregion
+    
+    //TODO
+    #region Money
+
+    private IEnumerator CoroutineMoneyTimer(float countdownTime)
+    {
+        // Ensure owner is the same once timer ends
+        GameObject startingOwner = owner;
+        
+        yield return new WaitForSeconds(countdownTime);
+
+        if (startingOwner == owner)
+            TimerFinished();
+    }
+    
+    private void TimerFinished()
+    {
+        MoneyGet.Invoke();
+        
+        if (owner)
+            StartCoroutine(CoroutineMoneyTimer(moneyInterval));
     }
     #endregion
     
@@ -64,6 +96,11 @@ public class RTSTile : MonoBehaviour
     public void SetOwner(GameObject newOwner)
     {
         owner = newOwner;
+
+        if (tileType == TileType.Money)
+        {
+            StartCoroutine(CoroutineMoneyTimer(moneyInterval));
+        }
     }
 
     public GameObject GetOwner()
@@ -91,6 +128,18 @@ public class RTSTile : MonoBehaviour
     public Vector2Int GetGridPosition()
     {
         return gridPosition;
+    }
+    #endregion
+    
+    #region Mouse
+    private void OnMouseEnter()
+    {
+        grid.SetNewTileHovered(this);
+    }
+    
+    private void OnMouseExit()
+    {
+        grid.ClearTile();
     }
     #endregion
 }
