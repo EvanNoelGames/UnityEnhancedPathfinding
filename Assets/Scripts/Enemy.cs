@@ -29,18 +29,17 @@ public class Enemy : MonoBehaviour
         
         // have to check whose turn it is as well 
 
-        if(_totalMoney != 0)
-        {
-            // create the actual game object for the agent
-            agentPrefab = Instantiate(agentPrefab);
+       
+        // create the actual game object for the agent
+        agentPrefab = Instantiate(agentPrefab);
 
-            // set its position
-            agentPrefab.transform.position = new Vector3(2, 2, 2);
+        // set its position
+        agentPrefab.transform.position = new Vector3(2, 2, 2);
 
-            // set up the agent
-            _agent = agentPrefab.GetComponent<EvanTestAgent>();
+        // set up the agent
+        _agent = agentPrefab.GetComponent<EvanTestAgent>();
 
-            _agent.SetWaypoint(goal);
-        }
+        _agent.SetWaypoint(goal);
+        
     }
 }

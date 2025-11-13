@@ -61,6 +61,7 @@ public class RTSGame : MonoBehaviour
     private void StartGame()
     {
         isGameRunning = true;
+        
     }
 
     private void GameOver(bool playerWon)
@@ -217,6 +218,43 @@ public class RTSGame : MonoBehaviour
         EvanTestAgent agentComponent = newAgent.GetComponent<EvanTestAgent>();
         agentComponent.Setup();
         agentComponent.SetCurrentTile(tile);
+    }
+    
+    private void SpawnEnemy(RTSTile tile)
+    {
+        if (money < agentCost) return;
+        SubtractMoney(agentCost);
+        
+        GameObject newEnemy = Instantiate(agentPrefab);
+        tile.SetOwner(newEnemy);
+        newEnemy.transform.position = tile.transform.position + (Vector3.back * 3);
+
+        EvanTestAgent agentComponent = newEnemy.GetComponent<EvanTestAgent>();
+        agentComponent.Setup();
+        agentComponent.SetCurrentTile(tile);
+
+        List<Vector2Int> moneyTileLocations = grid.GetMoneyTiles();
+        RTSTile closetTile = null;
+        float currentMinDistance = 18;
+        
+        foreach(var tileLocations in moneyTileLocations)
+        {
+            RTSTile newTile = grid.GetTileAtPosition(tileLocations); 
+            
+            float distance = Mathf.Abs(tileLocations.x - tile.GetGridPosition().x) + Mathf.Abs(tileLocations.y - tile.GetGridPosition().y);
+            
+            if (distance < currentMinDistance)
+            {
+                currentMinDistance = distance;
+                closetTile = newTile;
+            }
+        }
+
+        if (closetTile != null)
+        {
+            agentComponent.SetWaypoint(closetTile);
+            
+        }
     }
     #endregion
 }

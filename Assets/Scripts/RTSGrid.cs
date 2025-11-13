@@ -114,6 +114,16 @@ public class RTSGrid : MonoBehaviour
         }
         return neighbors;
     }
+    
+    public List<Vector2Int> GetMoneyTiles()
+    {
+        return moneyTiles;
+    }
+    
+    public RTSTile GetTileAtPosition(Vector2Int position)
+    {
+        return tiles.GetValueOrDefault(position);
+    }
 
     public void SetNewTileHovered(RTSTile tile)
     {
