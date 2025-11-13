@@ -49,7 +49,7 @@ public class TacticalPathfinding
     
     List<Tile> FindBestPath(Tile start,  Tile end, Grid grid)
     {
-        _path = _aStar.FindPath(start, end, grid);
+       // _path = _aStar.FindPath(start, end, grid);
         float bestTileValue = 0;
 
         foreach (var tile in _path)

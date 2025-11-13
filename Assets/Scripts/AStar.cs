@@ -9,22 +9,22 @@ public class AStar
 {
     struct TilePrioritized
     {
-        public Tile Tile;
+        public RTSTile Tile;
         public float GCost;
         public float HCost;
-        public Tile Parent;
+        public RTSTile Parent;
     }
     
     private PriorityQueue<TilePrioritized, float> _frontier;
-    private Dictionary<Tile, Tile> _cameFrom;
-    private Dictionary<Tile, float> _costSoFar; 
+    private Dictionary<RTSTile, RTSTile> _cameFrom;
+    private Dictionary<RTSTile, float> _costSoFar; 
     
-    List<Tile> _neighbors;
+    List<RTSTile> _neighbors;
     
-    Grid _grid;
+    RTSGrid _grid;
     
-    Tile _start;
-    Tile _goal;
+    RTSTile _start;
+    RTSTile _goal;
     TilePrioritized _current;
 
     private TilePrioritized _ptile; 
@@ -35,20 +35,20 @@ public class AStar
         return Mathf.Abs(p1.x - p2.x) + Mathf.Abs(p1.y - p2.y);
     }
 
-    public List<Tile> FindPath(Tile start, Tile goal, Grid grid)
+    public List<RTSTile> FindPath(RTSTile start, RTSTile goal, RTSGrid grid)
     {
         // initialise the _priorityQueue
         _frontier = new PriorityQueue<TilePrioritized, float>();
-        _cameFrom = new Dictionary<Tile, Tile>();
-        _costSoFar = new Dictionary<Tile, float>();
-        _neighbors = new List<Tile>();
+        _cameFrom = new Dictionary<RTSTile, RTSTile>();
+        _costSoFar = new Dictionary<RTSTile, float>();
+        _neighbors = new List<RTSTile>();
         
         _costSoFar.Add(start, 0);
         
         _ptile = new TilePrioritized();
         _ptile.Tile = start;
         _ptile.GCost = 0;
-        _ptile.HCost = Heuristic(grid.GetTilePosition(start), grid.GetTilePosition(goal));
+        _ptile.HCost = Heuristic(_start.GetGridPosition(), _goal.GetGridPosition());
         
         _frontier.Enqueue(_ptile, 0);
         
@@ -74,7 +74,7 @@ public class AStar
                     TilePrioritized newptile = new TilePrioritized();
                     newptile.Tile = next;
                     newptile.GCost = newcost;
-                    newptile.HCost = Heuristic(grid.GetTilePosition(goal), grid.GetTilePosition(next));
+                    newptile.HCost = Heuristic(_goal.GetGridPosition(), next.GetGridPosition());
                     newptile.Parent = _current.Tile;
                     
                     _costSoFar[next] = newcost;
@@ -87,13 +87,13 @@ public class AStar
 
         if (_current.Tile != goal)
         {
-            return new List<Tile>();
+            return new List<RTSTile>();
         }
         
         
-        List<Tile> path = new List<Tile>();
+        List<RTSTile> path = new List<RTSTile>();
 
-        Tile currentTile = _current.Tile;
+        RTSTile currentTile = _current.Tile;
 
         while (currentTile != start)
         {

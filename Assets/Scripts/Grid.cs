@@ -63,7 +63,8 @@ public class Grid : MonoBehaviour
 
     List<Tile> FindPath(Tile start, Tile goal)
     {
-        return useTheta ? thetaStar.FindPath(start, goal, this) : astar.FindPath(start, goal, this);
+        //return useTheta ? thetaStar.FindPath(start, goal, this) : astar.FindPath(start, goal, this);
+        return new List<Tile>();
     }
     
     void ClickedTile(GameObject clickedTile)

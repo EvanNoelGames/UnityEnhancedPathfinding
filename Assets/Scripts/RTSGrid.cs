@@ -86,6 +86,34 @@ public class RTSGrid : MonoBehaviour
         
         tiles.Clear();
     }
+    
+    public List<RTSTile> FindNeighbors(RTSTile tile)
+    {
+        // get the current tile pos
+        Vector2Int currentPos = tile.GetGridPosition();
+        
+        // add all the potential offsets to the vector or just loop through them 
+        List<RTSTile> neighbors = new List<RTSTile>();
+        
+        for (int x = -1; x <= 1; ++x)
+        {
+            for (int y = -1; y <= 1; ++y)
+            {
+                if (x == 0 && y == 0)
+                    continue; 
+                
+                // make the neighbor point
+                Vector2Int neighborPos = new Vector2Int(currentPos.x + x, currentPos.y + y);
+               
+                // check if its in the grid list which means that its a valid tile
+                if (tiles.TryGetValue(neighborPos,  out RTSTile neighborTile) &&  (neighborTile.GetTileType() != RTSTile.TileType.Blocked))
+                {
+                    neighbors.Add(neighborTile);
+                }
+            }
+        }
+        return neighbors;
+    }
 
     public void SetNewTileHovered(RTSTile tile)
     {
