@@ -18,7 +18,7 @@ public class RTSGrid : MonoBehaviour
 
     public event Action<RTSTile> NewTileHovered = delegate { }; 
     public event Action TileExited = delegate { }; 
-    public event Action MoneyTileEarned = delegate { }; 
+    public event Action<RTSTile> MoneyTileEarned = delegate { }; 
     
     void Start()
     {
@@ -115,9 +115,48 @@ public class RTSGrid : MonoBehaviour
         return neighbors;
     }
     
-    public List<Vector2Int> GetMoneyTiles()
+    public List<Vector2Int> GetMoneyTiles(bool isFriendly)
     {
-        return moneyTiles;
+        List<Vector2Int> emptyMoneyTiles = new List<Vector2Int>();
+
+        foreach (var tile in moneyTiles)
+        {
+            if (!GetTileAtPosition(tile).HasOwner() || GetTileAtPosition(tile).GetOwner().GetComponent<EvanTestAgent>().GetIsFriendly() == isFriendly)
+            {
+                emptyMoneyTiles.Add(tile);
+            }
+        }
+        
+        return emptyMoneyTiles;
+    }
+    
+    public List<RTSTile> GetTiles()
+    {
+        List<RTSTile> allTiles = new List<RTSTile>();
+        
+        foreach (var tile in tiles)
+        {
+            allTiles.Add(tile.Value);
+        }
+
+        return allTiles;
+    }
+    
+    public List<RTSTile> GetEmptyTiles()
+    {
+        List<RTSTile> allTiles = new List<RTSTile>();
+        
+        foreach (var tile in tiles)
+        {
+            RTSTile currentTile = tile.Value;
+
+            if (!currentTile.HasOwner() && currentTile.GetTileType() != RTSTile.TileType.Blocked)
+            {
+                allTiles.Add(currentTile);
+            }
+        }
+
+        return allTiles;
     }
     
     public RTSTile GetTileAtPosition(Vector2Int position)
@@ -135,8 +174,8 @@ public class RTSGrid : MonoBehaviour
         TileExited.Invoke();
     }
 
-    private void MoneyTileMade()
+    private void MoneyTileMade(RTSTile tile)
     {
-        MoneyTileEarned.Invoke();
+        MoneyTileEarned.Invoke(tile);
     }
 }

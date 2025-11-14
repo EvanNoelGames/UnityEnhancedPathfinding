@@ -1,28 +1,114 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 using Utils; 
 
 public class Enemy : MonoBehaviour
 {
     public GameObject agentPrefab;
+    public int maxAgents = 8;
     private EvanTestAgent _agent;
     private AStar _aStar;
     
     private RTSTile _rtsTile;
-    private RTSGrid _rtsGrid;
-    private RTSGame _rtsGame;
+    public RTSGrid _rtsGrid;
+    public RTSGame _rtsGame;
     
     private Tile _goal;
     
-    private int _totalMoney = 0; 
+    private int money = 0;
+    private int agentCost = 0;
+    private float spawnInterval = 1.0f;
+
+    public void GameStart(int startingMoney, int newAgentCost)
+    {
+        money = startingMoney;
+        agentCost = newAgentCost;
+
+        StartCoroutine(EnemySpawning());
+    }
+
+    IEnumerator EnemySpawning()
+    {
+        yield return new WaitForSeconds(1 * spawnInterval);
+        
+        while (_rtsGame.GetIsRunning())
+        {
+            SpawnEnemy(_rtsGrid.GetEmptyTiles()[Random.Range(0, _rtsGrid.GetEmptyTiles().Count)]);
+            yield return new WaitForSeconds(Random.Range(0.2f * spawnInterval, 5.0f * spawnInterval));
+        }
+    }
+    
+    public void AddMoney(int amount)
+    {
+        money += amount;
+    }
+    
+    private void SpawnEnemy(RTSTile tile)
+    {
+        if (money < agentCost) return;
+        if (maxAgents < _rtsGame.enemyAgents) return;
+        
+        money -= agentCost;
+        
+        GameObject newEnemy = Instantiate(agentPrefab);
+        _rtsGame.enemyAgents++;
+        newEnemy.transform.position = tile.transform.position + (Vector3.back * 3);
+
+        EvanTestAgent agentComponent = newEnemy.GetComponent<EvanTestAgent>();
+        agentComponent.Killed += _rtsGame.AgentKilled;
+        agentComponent.SetIsFriendly(false);
+        agentComponent.Setup();
+        agentComponent.SetCurrentTile(tile);
+
+        List<Vector2Int> moneyTileLocations = _rtsGrid.GetMoneyTiles(false);
+        RTSTile closetTile = null;
+        float currentMinDistance = 18;
+        
+        foreach(var tileLocations in moneyTileLocations)
+        {
+            RTSTile newTile = _rtsGrid.GetTileAtPosition(tileLocations); 
+            
+            float distance = Mathf.Abs(tileLocations.x - tile.GetGridPosition().x) + Mathf.Abs(tileLocations.y - tile.GetGridPosition().y);
+            
+            if (distance < currentMinDistance)
+            {
+                currentMinDistance = distance;
+                closetTile = newTile;
+            }
+        }
+
+        if (closetTile == null)
+        {
+            closetTile =  _rtsGrid.GetEmptyTiles()[Random.Range(0, _rtsGrid.GetEmptyTiles().Count)];
+        }
+
+        if (closetTile != null)
+        {
+            agentComponent.SetWaypoint(closetTile);
+        }
+    }
+
+    public void SetAgentCost(int newValue)
+    {
+        agentCost = newValue;
+    }
+
+    public void SetMaxEnemies(int newValue)
+    {
+        maxAgents = newValue;
+    }
+
+    public void SetSpawnInterval(float newInterval)
+    {
+        spawnInterval = newInterval;
+        print(spawnInterval);
+    }
     
     void CreateAgent(RTSTile start, RTSTile goal, RTSGrid grid)
     {
-        _rtsGame = new RTSGame();
         _aStar = new AStar();
-
-        _totalMoney = _rtsGame.GetMoney();
         
         List<Tile> path = new List<Tile>();
         //path = _aStar.FindPath(start, goal , grid);
@@ -41,5 +127,10 @@ public class Enemy : MonoBehaviour
 
         _agent.SetWaypoint(goal);
         
+    }
+
+    public int GetMoney()
+    {
+        return money;
     }
 }

@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3901831765197686096}
   - component: {fileID: 3901831765197686097}
+  - component: {fileID: 3940085371139678858}
   m_Layer: 0
   m_Name: RTSGrid
   m_TagString: Untagged
@@ -48,3 +49,16 @@ MonoBehaviour:
   ySize: 9
   tileDistance: 0.6
   tilePrefab: {fileID: 4762594461773941582, guid: 851731d3d1052f641a2f90a3fac825f7, type: 3}
+  moneyTiles: []
+--- !u!114 &3940085371139678858
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3901831765197686110}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 03922cc9d489ba349a1e97168d469e6b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

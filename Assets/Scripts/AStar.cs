@@ -48,7 +48,7 @@ public class AStar
         _ptile = new TilePrioritized();
         _ptile.Tile = start;
         _ptile.GCost = 0;
-        _ptile.HCost = Heuristic(_start.GetGridPosition(), _goal.GetGridPosition());
+        _ptile.HCost = Heuristic(start.GetGridPosition(), goal.GetGridPosition());
         
         _frontier.Enqueue(_ptile, 0);
         
@@ -74,7 +74,7 @@ public class AStar
                     TilePrioritized newptile = new TilePrioritized();
                     newptile.Tile = next;
                     newptile.GCost = newcost;
-                    newptile.HCost = Heuristic(_goal.GetGridPosition(), next.GetGridPosition());
+                    newptile.HCost = Heuristic(goal.GetGridPosition(), next.GetGridPosition());
                     newptile.Parent = _current.Tile;
                     
                     _costSoFar[next] = newcost;

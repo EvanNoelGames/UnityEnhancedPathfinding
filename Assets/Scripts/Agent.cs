@@ -20,7 +20,7 @@ public class Agent : MonoBehaviour
     public Tile currentTile = null;
     private Vector3 targetPosition;
     private bool walking = false;
-
+    
     public void UpdatePath(List<Tile> newPath)
     {
         path.Clear();

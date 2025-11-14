@@ -11,13 +11,87 @@ public class EvanTestAgent : MonoBehaviour
     public GameObject leader;
     public List<GameObject> followers = new List<GameObject>();
     private Vector3 waypoint;
+    private bool isMoving = false;
     private RTSTile currentTile;
+    private RTSTile targetTile;
+    private bool isFriendly = true;
+    [Header("Values")]
+    [SerializeField] private Color enemyColor = Color.white; 
+    
+    private List<RTSTile> path = new List<RTSTile>();
+    
+    public event Action<bool, GameObject> Killed =  delegate { };
 
     public void Setup()
     {
-        
+        if (!isFriendly)
+        {
+            GetComponentInChildren<MeshRenderer>().material.color = enemyColor;
+        }
     }
 
+    private void OnCollisionEnter2D(Collision2D other)
+    {
+        if (!isFriendly) return;
+        
+        EvanTestAgent otherAgent = other.gameObject.GetComponent<EvanTestAgent>();
+        if (otherAgent && otherAgent.isFriendly != isFriendly)
+        {
+            Killed.Invoke(isFriendly, gameObject);
+            Destroy(other.gameObject);
+            otherAgent.Killed.Invoke(otherAgent.isFriendly, gameObject);
+            Destroy(gameObject);
+        }
+    }
+
+    private void FixedUpdate()
+    {
+        if (leader)
+        {
+            if (leader.GetComponent<EvanTestAgent>().GetIsMoving() && (transform.position - leader.transform.position).magnitude < 0.05)
+                transform.position = Vector3.MoveTowards(transform.position, leader.transform.position, Time.deltaTime);
+            
+            return;
+        }
+        
+        if (isMoving)
+        {
+            // Move toward target position
+            transform.position = Vector3.MoveTowards(transform.position, waypoint, Time.deltaTime);
+            
+            // We're really close to the target
+            // if ((transform.position - waypoint).magnitude < 0.005)
+            // {
+            //     if (path.Count == 1)
+            //     {
+            //         path.RemoveAt(0);
+            //         isMoving = false;
+            //         transform.position = waypoint;
+            //         return;
+            //     }
+            //
+            //     if (path.Count != 0)
+            //     {
+            //         path.RemoveAt(0);
+            //         waypoint = path[0].transform.position + Vector3.back * 3;   
+            //     }
+            // }
+        }
+    }
+    
+    #region Setter/Getter
+
+    public bool GetIsFriendly()
+    {
+        return isFriendly;
+    }
+    
+    public void SetIsFriendly(bool value)
+    {
+        isFriendly = value;
+    }
+    #endregion
+    
     #region Group
     private void OnTriggerEnter2D(Collider2D other)
     {
@@ -25,7 +99,7 @@ public class EvanTestAgent : MonoBehaviour
         if (leader) return;
         
         EvanTestAgent otherAgent = other.gameObject.GetComponent<EvanTestAgent>();
-        if (otherAgent)
+        if (otherAgent && otherAgent.isFriendly == isFriendly)
         {
             GameObject otherAgentLeader = otherAgent.GetLeader();
             
@@ -56,7 +130,7 @@ public class EvanTestAgent : MonoBehaviour
             }
         }
         // Follower
-        else if (otherAgent)
+        else if (otherAgent && otherAgent.isFriendly == isFriendly)
         {
             if (leader)
             {
@@ -120,12 +194,34 @@ public class EvanTestAgent : MonoBehaviour
     #region Target
     public void SetWaypoint(RTSTile tile)
     {
-        waypoint = tile.transform.position;
-        
-        currentTile.ResetOwner();
-        SetCurrentTile(tile);
-        tile.SetOwner(gameObject);
-        transform.position = waypoint + Vector3.back * 3;
+        waypoint = tile.transform.position + Vector3.back * 3;
+        isMoving = true;
+    }
+    
+    public void SetWaypoint(Vector3 position)
+    {
+        position.z = 0;
+        waypoint = position + Vector3.back * 3;
+        isMoving = true;
+    }
+
+    public void SetPath(List<RTSTile> newPath)
+    {
+        path = newPath;
+        targetTile = path[0];
+        path.RemoveAt(0);
+        isMoving = true;
+    }
+
+    public void ClearPath()
+    {
+        isMoving = false;
+        path.Clear();
+    }
+
+    public bool GetIsMoving()
+    {
+        return isMoving;
     }
     #endregion
     
@@ -133,6 +229,11 @@ public class EvanTestAgent : MonoBehaviour
     public void SetCurrentTile(RTSTile tile)
     {
         currentTile = tile;
+    }
+    
+    public RTSTile GetCurrentTile()
+    {
+        return currentTile;
     }
     #endregion
 }

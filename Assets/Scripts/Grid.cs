@@ -53,7 +53,7 @@ public class Grid : MonoBehaviour
 
     void Update()
     {
-        CheckForClick();
+        //CheckForClick();
         
         if (running && useTheta)
             DrawThetaLine();

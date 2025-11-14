@@ -34,6 +34,13 @@ public class RTSWaypoint : MonoBehaviour
     {
         return targetTile;
     }
+    
+    public RTSTile GetTargetTileComponent()
+    {
+        if (!targetTile) return null;
+        
+        return targetTile.GetComponent<RTSTile>();
+    }
 
     public void ClearTile()
     {

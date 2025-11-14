@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 1826166597839025770}
   - component: {fileID: 6780928412305977841}
   - component: {fileID: 7633427551248947483}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Plane
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -93,8 +93,8 @@ GameObject:
   m_Component:
   - component: {fileID: 8701756338783774280}
   - component: {fileID: 3387548675621917867}
-  - component: {fileID: 6473184408344667535}
-  m_Layer: 0
+  - component: {fileID: 3944558726846301989}
+  m_Layer: 6
   m_Name: RTSTile
   m_TagString: Tile
   m_Icon: {fileID: 0}
@@ -133,18 +133,31 @@ MonoBehaviour:
   colorBlock: {r: 0.2735849, g: 0.2735849, b: 0.2735849, a: 0}
   colorMoney: {r: 0.963735, g: 1, b: 0, a: 0}
   colorNone: {r: 1, g: 1, b: 1, a: 0}
-  moneyInterval: 1
-  value: 3
---- !u!65 &6473184408344667535
-BoxCollider:
+  moneyInterval: 2
+  value: 2
+--- !u!61 &3944558726846301989
+BoxCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4762594461773941582}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
   m_Enabled: 1
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IsTrigger: 1
+  m_UsedByEffector: 0
+  m_UsedByComposite: 0
+  m_Offset: {x: 0, y: 0}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0, y: 0}
+    oldSize: {x: 0, y: 0}
+    newSize: {x: 0, y: 0}
+    adaptiveTilingThreshold: 0
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Size: {x: 1, y: 1}
+  m_EdgeRadius: 0

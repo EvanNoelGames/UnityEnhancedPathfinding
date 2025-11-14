@@ -21,9 +21,9 @@ public class RTSTile : MonoBehaviour
     [SerializeField] private Color colorMoney =  Color.yellow;
     [SerializeField] private Color colorNone =  Color.red;
     [Header("Values")]
-    [SerializeField] private float moneyInterval = 1.0f;
+    [SerializeField] private float moneyInterval = 2.0f;
 
-    public int value = 3;
+    public int value = 2;
     
     private RTSGrid grid;
     
@@ -31,7 +31,19 @@ public class RTSTile : MonoBehaviour
     private TileType tileType = TileType.None;
     private GameObject owner;
 
-    public event Action MoneyGet = delegate { };
+    public event Action<RTSTile> MoneyGet = delegate { };
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (other.gameObject.CompareTag("AgentPlane"))
+            SetOwner(other.gameObject);
+    }
+
+    private void OnTriggerExit2D(Collider2D other)
+    {
+        if (other.gameObject == owner)
+            ResetOwner();
+    }
 
     public void SetGrid(RTSGrid grid)
     {
@@ -67,9 +79,12 @@ public class RTSTile : MonoBehaviour
         plane.GetComponent<MeshRenderer>().material.color = colorNone;
         tileType = TileType.None;
     }
+    public Vector2Int GetCurrentTilePosition()
+    {
+        return gridPosition;
+    }
     #endregion
     
-    //TODO
     #region Money
 
     private IEnumerator CoroutineMoneyTimer(float countdownTime)
@@ -85,7 +100,7 @@ public class RTSTile : MonoBehaviour
     
     private void TimerFinished()
     {
-        MoneyGet.Invoke();
+        MoneyGet.Invoke(this);
         
         if (owner)
             StartCoroutine(CoroutineMoneyTimer(moneyInterval));
@@ -93,7 +108,7 @@ public class RTSTile : MonoBehaviour
     #endregion
     
     #region Owner
-    public void SetOwner(GameObject newOwner)
+    private void SetOwner(GameObject newOwner)
     {
         owner = newOwner;
 
@@ -108,7 +123,7 @@ public class RTSTile : MonoBehaviour
         return owner;
     }
 
-    public void ResetOwner()
+    private void ResetOwner()
     {
         owner = null;
     }

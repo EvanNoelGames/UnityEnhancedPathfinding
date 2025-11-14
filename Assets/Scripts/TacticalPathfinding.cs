@@ -2,16 +2,16 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Utils;
-public class TacticalPathfinding
+public class TacticalPathfinding : MonoBehaviour
 {
     struct TilePrioritized
     {
-        public Tile Tile;
+        public RTSTile Tile;
         public float Distance;
         public float TacticalValue;
         public float ObjectiveWeight;
         public float DistanceToEnemy;
-        public Tile Parent;
+        public RTSTile Parent;
     }
     
     private AStar _aStar = new AStar();
@@ -20,11 +20,11 @@ public class TacticalPathfinding
    
     private Grid _grid =  new Grid();
     
-    private Agent _agent = new Agent();
+    private EvanTestAgent _agent = new EvanTestAgent();
     
-    private Tile _currentTile = new Tile();
+    private RTSTile _currentTile = new RTSTile();
     
-    List<Tile> _path = new List<Tile>();
+    List<RTSTile> _path = new List<RTSTile>();
     
     
 
@@ -47,9 +47,9 @@ public class TacticalPathfinding
      */
     
     
-    List<Tile> FindBestPath(Tile start,  Tile end, Grid grid)
+    public List<RTSTile> FindBestPath(RTSTile start,  RTSTile end, RTSGrid grid)
     {
-       // _path = _aStar.FindPath(start, end, grid);
+        _path = _aStar.FindPath(start, end, grid);
         float bestTileValue = 0;
 
         foreach (var tile in _path)
@@ -62,7 +62,7 @@ public class TacticalPathfinding
             
             // calculate the current tiles tactical value
             // if the current tile can see the enemy increases its tactical value
-            if (LineOfSight(tile, _agent.currentTile))
+            if (LineOfSight(tile, _agent.GetCurrentTile()))
             {
                 _ptile.TacticalValue += 1; 
             }
@@ -78,7 +78,7 @@ public class TacticalPathfinding
             // tact value is if we can see the enemy
             // obj weight is if were close to the goal tile or on it
             // threat is distance to enemy 
-            _ptile.DistanceToEnemy = Heuristic(_ptile.Tile.gridPosition, _agent.currentTile.gridPosition);
+            _ptile.DistanceToEnemy = Heuristic(_ptile.Tile.GetGridPosition(), _agent.GetCurrentTile().GetGridPosition());
             float currentPosValue = (_ptile.TacticalValue + ( _ptile.ObjectiveWeight / _ptile.Distance) - _ptile.DistanceToEnemy);
 
             if (bestTileValue > currentPosValue)
@@ -86,7 +86,7 @@ public class TacticalPathfinding
                 // add all the paths with the best value to a list and return the list
                 
             }
-            return new List<Tile>();
+            return new List<RTSTile>();
         }
         
         // if we see the agent from our current tile
@@ -99,11 +99,16 @@ public class TacticalPathfinding
         return distance;*/
         return null;
     }
-    
-    bool LineOfSight(Tile from, Tile to)
+
+    public void SetAgent(EvanTestAgent newAgent)
     {
-        Vector2 startPos = from.gridPosition;
-        Vector2 endPos = to.gridPosition;
+        _agent = newAgent;
+    }
+    
+    bool LineOfSight(RTSTile from, RTSTile to)
+    {
+        Vector2 startPos = from.GetGridPosition();
+        Vector2 endPos = to.GetGridPosition();
         
         // calculate the difference between the end and start positions
         var dx = endPos.x - startPos.x;
