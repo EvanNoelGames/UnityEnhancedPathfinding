@@ -13,6 +13,7 @@ public class RTSGrid : MonoBehaviour
     [SerializeField] private GameObject tilePrefab;
     [Header("Tiles")]
     [SerializeField] private List<Vector2Int> moneyTiles =  new List<Vector2Int>();
+    [SerializeField] private List<Vector2Int> blockedTiles =  new List<Vector2Int>();
     
     private Dictionary<Vector2Int, RTSTile> tiles = new Dictionary<Vector2Int, RTSTile>();
 
@@ -46,6 +47,11 @@ public class RTSGrid : MonoBehaviour
                 if (moneyTiles.Contains(new Vector2Int(x, y)))
                 {
                     newTileComponent.SetTileType(RTSTile.TileType.Money);
+                }
+                // Place blocked tiles
+                if (blockedTiles.Contains(new Vector2Int(x, y)))
+                {
+                    newTileComponent.SetTileType(RTSTile.TileType.Blocked);
                 }
 
                 // Add to dictionary of tiles
