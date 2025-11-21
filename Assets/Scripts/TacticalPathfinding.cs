@@ -17,16 +17,19 @@ public class TacticalPathfinding : MonoBehaviour
     private AStar _aStar = new AStar();
     
     private TilePrioritized _ptile = new TilePrioritized();
-   
-    private Grid _grid =  new Grid();
+
+    private RTSGrid _grid;
     
     private EvanTestAgent _agent = new EvanTestAgent();
     
     private RTSTile _currentTile = new RTSTile();
     
     List<RTSTile> _path = new List<RTSTile>();
-    
-    
+
+    private void Start()
+    {
+        _grid = transform.gameObject.GetComponent<RTSGrid>();
+    }
 
     // find the distance from point to the point
     float Heuristic(Vector2 p1, Vector2 p2)
@@ -127,13 +130,13 @@ public class TacticalPathfinding : MonoBehaviour
         // loop through all the steps checking for any obstacle between from and to
         for (int i = 0; i < steps; ++i)
         {
-            var gridX = Mathf.Round(currentX);
-            var gridY = Mathf.Round(currentY);
+            var gridX = (int)Mathf.Round(currentX);
+            var gridY = (int)Mathf.Round(currentY);
             
-            Tile tile = _grid.GetTileAtPosition(new Vector2(gridX, gridY));
+            RTSTile tile = _grid.GetTileAtPosition(new Vector2Int(gridX, gridY));
             if (tile != null && tile != from && tile != to)
             {
-                if (tile.GetFill())
+                if (tile.GetTileType() == RTSTile.TileType.Blocked)
                 {
                     return false;
                 }
