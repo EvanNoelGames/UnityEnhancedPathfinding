@@ -16,6 +16,10 @@ public class RTSGame : MonoBehaviour
     [SerializeField] private Slider agentCostSlider;
     [SerializeField] private Slider enemySpawnIntervalSlider;
     [SerializeField] private Slider maxEnemiesSlider;
+    [SerializeField] private AudioSource killAudioSource;
+    [SerializeField] private AudioSource clickAudioSource;
+    [SerializeField] private AudioSource newAgentAudioSource;
+    [SerializeField] private AudioSource placeAudioSource;
     [Header("Prefabs")]
     [SerializeField] private GameObject agentPrefab;
     [SerializeField] private GameObject waypointPrefab;
@@ -32,8 +36,8 @@ public class RTSGame : MonoBehaviour
     private GameObject currentWaypoint = null;
     private List<EvanTestAgent> guidingAgents = new List<EvanTestAgent>();
     
-    public int playerAgents = 0;
-    public int enemyAgents = 0;
+    public List<EvanTestAgent> playerAgents = new List<EvanTestAgent>();
+    public List<EvanTestAgent> enemyAgents = new List<EvanTestAgent>();
 
     private bool isFiring = false;
     
@@ -103,23 +107,26 @@ public class RTSGame : MonoBehaviour
         
         if (friendly)
         {
-            playerAgents--;
+            playerAgents.Remove(agentComponent);
+            killAudioSource.Play();
         }
         else
         {
-            enemyAgents--;
+            enemyAgents.Remove(agentComponent);
         }
+        
+        Destroy(agent);
 
-        if (playerAgents == 0 && enemyAgents == 0)
+        if (playerAgents.Count == 0 && enemyAgents.Count == 0)
         {
             GameOver(money >= enemyPlayer.GetMoney());
         }
 
-        if (playerAgents <= 0)
+        if (playerAgents.Count <= 0)
         {
             GameOver(true);
         }
-        else if (enemyAgents <= 0)
+        else if (enemyAgents.Count <= 0)
         {
             GameOver(false);
         }
@@ -202,12 +209,16 @@ public class RTSGame : MonoBehaviour
                 if (tileHit)
                 {
                     // Clicked tile without owner
-                    if (!tileHit.GetOwner())
+                    if (!tileHit.GetOwner() || !tileHit.GetOwner().GetComponent<EvanTestAgent>().GetIsFriendly())
                     {
                         TileClicked(tileHit);
+                        return;
                     }
+                    
+                    EvanTestAgent tileAgent =  tileHit.GetOwner().GetComponent<EvanTestAgent>();
+                    
                     // Clicked tile with owner
-                    else if (tileHit.GetOwner().GetComponent<EvanTestAgent>().GetIsFriendly())
+                    if (tileAgent.GetIsFriendly())
                     {
                         AgentClicked(tileHit.GetOwner().GetComponent<EvanTestAgent>());
                     }
@@ -241,7 +252,7 @@ public class RTSGame : MonoBehaviour
             case RTSTile.TileType.Money:
             {
                 if (currentWaypoint)
-                    PlaceWaypoint();
+                    PlaceWaypoint(tile);
                 return;
             }
             case RTSTile.TileType.None:
@@ -258,6 +269,8 @@ public class RTSGame : MonoBehaviour
     private void AgentClicked(EvanTestAgent agent)
     {
         if (currentWaypoint) return;
+        
+        clickAudioSource.Play();
 
         // Make sure we are selecting the leader
         if (agent.leader != null)
@@ -280,12 +293,17 @@ public class RTSGame : MonoBehaviour
         grid.TileExited += newWaypointComponent.ClearTile;
     }
 
-    private void PlaceWaypoint()
+    private void PlaceWaypoint(RTSTile tile = null)
     {
         if (!currentWaypoint) return;
         
         RTSWaypoint currentWaypointComponent = currentWaypoint.GetComponent<RTSWaypoint>();
         RTSTile targetTile = currentWaypointComponent.GetTargetTileComponent();
+        if (!targetTile)
+            targetTile = tile;
+        if (!targetTile) return;
+        
+        placeAudioSource.Play();
         
         //tacticalPathfinding.SetAgent(guidingAgents[0]);
         //List<RTSTile> newPath = tacticalPathfinding.FindBestPath(guidingAgents[0].GetCurrentTile(), currentWaypointComponent.GetTargetTileComponent(), grid);
@@ -302,20 +320,18 @@ public class RTSGame : MonoBehaviour
         //guidingAgents[0].SetPath(newPath);
 
         // Placing on tile
-        if (targetTile)
+        foreach (EvanTestAgent agent in guidingAgents)
         {
-            foreach (EvanTestAgent agent in guidingAgents)
-            {
-                agent.SetWaypoint(currentWaypointComponent.GetTargetTileComponent());
-            }
+            agent.SetWaypoint(targetTile);
+            targetTile.plannedOwner = agent.gameObject;
         }
-        else // Placing on enemy agent
-        {
-            foreach (EvanTestAgent agent in guidingAgents)
-            {
-                agent.SetWaypoint(Camera.main.ScreenToWorldPoint(Input.mousePosition));
-            }
-        }
+        // else // Placing on enemy agent
+        // {
+        //     foreach (EvanTestAgent agent in guidingAgents)
+        //     {
+        //         agent.SetWaypoint(Camera.main.ScreenToWorldPoint(Input.mousePosition));
+        //     }
+        // }
         
         guidingAgents.Clear();
         Destroy(currentWaypoint);
@@ -323,8 +339,14 @@ public class RTSGame : MonoBehaviour
 
     private void SpawnAgentOnTile(RTSTile tile)
     {
+        newAgentAudioSource.Play();
+        
+        // Tile is not discovered
+        if (tile.GetIsHidden()) return;
         // Not enough money to spawn agent
         if (money < agentCost) return;
+        // Someone is walking to the tile
+        if (tile.plannedOwner) return;
 
         if (!firstAgentPlaced)
         {
@@ -335,10 +357,16 @@ public class RTSGame : MonoBehaviour
         SubtractMoney(agentCost);
         
         GameObject newAgent = Instantiate(agentPrefab);
-        playerAgents++;
         newAgent.transform.position = tile.transform.position + (Vector3.back * 3);
 
         EvanTestAgent agentComponent = newAgent.GetComponent<EvanTestAgent>();
+        foreach (EvanTestAgent agent in playerAgents)
+        {
+            Collider2D currentCollider = agent.GetComponentInChildren<Collider2D>();
+            Physics2D.IgnoreCollision(currentCollider, newAgent.GetComponentInChildren<Collider2D>());
+        }
+        
+        playerAgents.Add(agentComponent);
         agentComponent.Killed += AgentKilled;
         agentComponent.Setup();
         agentComponent.SetCurrentTile(tile);

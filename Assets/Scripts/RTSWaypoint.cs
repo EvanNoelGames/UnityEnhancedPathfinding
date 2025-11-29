@@ -22,10 +22,8 @@ public class RTSWaypoint : MonoBehaviour
 
     public void SetTargetTile(RTSTile newTargetTile)
     {
-        if (newTargetTile.GetOwner()) return;
-        
         targetTile = newTargetTile.gameObject;
-        transform.position = targetTile.transform.position + (Vector3.back * 3);
+        transform.position = targetTile.transform.position + (Vector3.back * 7);
         
         ShowWaypoint();
     }

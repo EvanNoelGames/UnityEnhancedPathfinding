@@ -8,6 +8,7 @@ public class EvanTestAgent : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private BoxCollider2D groupDetector;
+    [SerializeField] private RTSAgentRigidbody rigidBody;
     public GameObject leader;
     public List<GameObject> followers = new List<GameObject>();
     private Vector3 waypoint;
@@ -28,19 +29,19 @@ public class EvanTestAgent : MonoBehaviour
         {
             GetComponentInChildren<MeshRenderer>().material.color = enemyColor;
         }
+
+        rigidBody.CollisionEnter += RigidbodyOnCollisionEnter2D;
     }
 
-    private void OnCollisionEnter2D(Collision2D other)
+    private void RigidbodyOnCollisionEnter2D(Collision2D other)
     {
         if (!isFriendly) return;
         
-        EvanTestAgent otherAgent = other.gameObject.GetComponent<EvanTestAgent>();
+        EvanTestAgent otherAgent = other.gameObject.GetComponentInParent<EvanTestAgent>();
         if (otherAgent && otherAgent.isFriendly != isFriendly)
         {
             Killed.Invoke(isFriendly, gameObject);
-            Destroy(other.gameObject);
-            otherAgent.Killed.Invoke(otherAgent.isFriendly, gameObject);
-            Destroy(gameObject);
+            otherAgent.Killed.Invoke(otherAgent.isFriendly, otherAgent.gameObject);
         }
     }
 
@@ -49,7 +50,7 @@ public class EvanTestAgent : MonoBehaviour
         if (leader)
         {
             if (leader.GetComponent<EvanTestAgent>().GetIsMoving() && (transform.position - leader.transform.position).magnitude < 0.05)
-                transform.position = Vector3.MoveTowards(transform.position, leader.transform.position, Time.deltaTime);
+                rigidBody.transform.position = Vector3.MoveTowards(rigidBody.transform.position, leader.transform.position, Time.deltaTime);
             
             return;
         }
@@ -57,7 +58,7 @@ public class EvanTestAgent : MonoBehaviour
         if (isMoving)
         {
             // Move toward target position
-            transform.position = Vector3.MoveTowards(transform.position, waypoint, Time.deltaTime);
+            rigidBody.transform.position = Vector3.MoveTowards(rigidBody.transform.position, waypoint, Time.deltaTime);
             
             // We're really close to the target
             // if ((transform.position - waypoint).magnitude < 0.005)

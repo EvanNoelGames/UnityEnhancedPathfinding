@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class UICanvas : MonoBehaviour
 {
@@ -10,6 +11,8 @@ public class UICanvas : MonoBehaviour
     [SerializeField] private TextMeshProUGUI moneyText;
     [SerializeField] private TextMeshProUGUI agentCostText;
     [SerializeField] private TextMeshProUGUI gameOverText;
+    [SerializeField] private Button restartButton;
+    [SerializeField] private Canvas fadeCanvas;
     [Header("Values")]
     [SerializeField] private string playerLostMessage = "Player Lost!";
     [SerializeField] private string playerWonMessage = "Player Won!";
@@ -42,5 +45,8 @@ public class UICanvas : MonoBehaviour
         {
             gameOverText.SetText(playerWonMessage);
         }
+        
+        restartButton.gameObject.SetActive(true);
+        fadeCanvas.gameObject.SetActive(true);
     }
 }

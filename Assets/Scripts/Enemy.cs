@@ -48,15 +48,22 @@ public class Enemy : MonoBehaviour
     private void SpawnEnemy(RTSTile tile)
     {
         if (money < agentCost) return;
-        if (maxAgents < _rtsGame.enemyAgents) return;
+        if (maxAgents < _rtsGame.enemyAgents.Count) return;
         
         money -= agentCost;
         
         GameObject newEnemy = Instantiate(agentPrefab);
-        _rtsGame.enemyAgents++;
         newEnemy.transform.position = tile.transform.position + (Vector3.back * 3);
 
         EvanTestAgent agentComponent = newEnemy.GetComponent<EvanTestAgent>();
+        
+        foreach (EvanTestAgent agent in _rtsGame.enemyAgents)
+        {
+            Collider2D currentCollider = agent.GetComponentInChildren<Collider2D>();
+            Physics2D.IgnoreCollision(currentCollider, newEnemy.GetComponentInChildren<Collider2D>());
+        }
+        
+        _rtsGame.enemyAgents.Add(agentComponent);
         agentComponent.Killed += _rtsGame.AgentKilled;
         agentComponent.SetIsFriendly(false);
         agentComponent.Setup();
@@ -103,7 +110,6 @@ public class Enemy : MonoBehaviour
     public void SetSpawnInterval(float newInterval)
     {
         spawnInterval = newInterval;
-        print(spawnInterval);
     }
     
     void CreateAgent(RTSTile start, RTSTile goal, RTSGrid grid)

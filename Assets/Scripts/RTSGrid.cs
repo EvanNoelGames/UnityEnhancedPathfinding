@@ -13,6 +13,8 @@ public class RTSGrid : MonoBehaviour
     [SerializeField] private GameObject tilePrefab;
     [Header("Tiles")]
     [SerializeField] private List<Vector2Int> moneyTiles =  new List<Vector2Int>();
+    [SerializeField] private List<Vector2Int> blockedTiles =  new List<Vector2Int>();
+    [SerializeField] private List<Vector2Int> discoveredTiles =  new List<Vector2Int>();
     
     private Dictionary<Vector2Int, RTSTile> tiles = new Dictionary<Vector2Int, RTSTile>();
 
@@ -25,6 +27,7 @@ public class RTSGrid : MonoBehaviour
         SetupBoard();
     }
 
+    #region SETUP
     public void SetupBoard()
     {
         ClearBoard();
@@ -42,14 +45,31 @@ public class RTSGrid : MonoBehaviour
                 RTSTile newTileComponent = newTile.GetComponent<RTSTile>();
                 Vector2Int newTileGridPosition = new Vector2Int(x, y);
                 
+                newTileComponent.SetTileType(RTSTile.TileType.None);
+                
+                // Set discovered tiles
+                if (discoveredTiles.Contains(new Vector2Int(x, y)))
+                {
+                    newTileComponent.DiscoverTile();
+                }
+                
                 // Place money tiles
                 if (moneyTiles.Contains(new Vector2Int(x, y)))
                 {
                     newTileComponent.SetTileType(RTSTile.TileType.Money);
                 }
+                
+                // Place blocked tiles
+                if (blockedTiles.Contains(new Vector2Int(x, y)))
+                {
+                    newTileComponent.SetTileType(RTSTile.TileType.Blocked);
+                }
 
                 // Add to dictionary of tiles
                 tiles.Add(newTileGridPosition, newTileComponent);
+                
+                // Link to function
+                newTileComponent.TileEntered += TileEntered;
 
                 // Setup position
                 newTile.transform.parent = transform;
@@ -74,47 +94,9 @@ public class RTSGrid : MonoBehaviour
             }
         }
     }
+    #endregion
 
-    void ClearBoard()
-    {
-        if (tiles.Count == 0) return;
-        
-        foreach (var items in tiles)
-        {
-            Destroy(items.Value.gameObject);
-        }
-        
-        tiles.Clear();
-    }
-    
-    public List<RTSTile> FindNeighbors(RTSTile tile)
-    {
-        // get the current tile pos
-        Vector2Int currentPos = tile.GetGridPosition();
-        
-        // add all the potential offsets to the vector or just loop through them 
-        List<RTSTile> neighbors = new List<RTSTile>();
-        
-        for (int x = -1; x <= 1; ++x)
-        {
-            for (int y = -1; y <= 1; ++y)
-            {
-                if (x == 0 && y == 0)
-                    continue; 
-                
-                // make the neighbor point
-                Vector2Int neighborPos = new Vector2Int(currentPos.x + x, currentPos.y + y);
-               
-                // check if its in the grid list which means that its a valid tile
-                if (tiles.TryGetValue(neighborPos,  out RTSTile neighborTile) &&  (neighborTile.GetTileType() != RTSTile.TileType.Blocked))
-                {
-                    neighbors.Add(neighborTile);
-                }
-            }
-        }
-        return neighbors;
-    }
-    
+    #region GETTERS
     public List<Vector2Int> GetMoneyTiles(bool isFriendly)
     {
         List<Vector2Int> emptyMoneyTiles = new List<Vector2Int>();
@@ -163,6 +145,57 @@ public class RTSGrid : MonoBehaviour
     {
         return tiles.GetValueOrDefault(position);
     }
+    #endregion
+    
+    void ClearBoard()
+    {
+        if (tiles.Count == 0) return;
+        
+        foreach (var items in tiles)
+        {
+            Destroy(items.Value.gameObject);
+        }
+        
+        tiles.Clear();
+    }
+    
+    public List<RTSTile> FindNeighbors(RTSTile tile, bool includeBlocked = true)
+    {
+        // get the current tile pos
+        Vector2Int currentPos = tile.GetGridPosition();
+        
+        // add all the potential offsets to the vector or just loop through them 
+        List<RTSTile> neighbors = new List<RTSTile>();
+        
+        for (int x = -1; x <= 1; ++x)
+        {
+            for (int y = -1; y <= 1; ++y)
+            {
+                if (x == 0 && y == 0)
+                    continue; 
+                
+                // make the neighbor point
+                Vector2Int neighborPos = new Vector2Int(currentPos.x + x, currentPos.y + y);
+               
+                // check if its in the grid list which means that its a valid tile
+                if (!includeBlocked)
+                {
+                    if (tiles.TryGetValue(neighborPos,  out RTSTile neighborTile) &&  (neighborTile.GetTileType() != RTSTile.TileType.Blocked))
+                    {
+                        neighbors.Add(neighborTile);
+                    }
+                }
+                else
+                {
+                    if (tiles.TryGetValue(neighborPos,  out RTSTile neighborTile))
+                    {
+                        neighbors.Add(neighborTile);
+                    }
+                }
+            }
+        }
+        return neighbors;
+    }
 
     public void SetNewTileHovered(RTSTile tile)
     {
@@ -172,6 +205,16 @@ public class RTSGrid : MonoBehaviour
     public void ClearTile()
     {
         TileExited.Invoke();
+    }
+
+    private void TileEntered(RTSTile tile, EvanTestAgent agent)
+    {
+        if (!agent.GetIsFriendly()) return;
+
+        foreach (var tiles in FindNeighbors(tile, true))
+        {
+            tiles.DiscoverTile();
+        }
     }
 
     private void MoneyTileMade(RTSTile tile)
