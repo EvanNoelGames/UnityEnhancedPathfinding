@@ -56,6 +56,11 @@ public class Enemy : MonoBehaviour
         _rtsGame.enemyAgents++;
         newEnemy.transform.position = tile.transform.position + (Vector3.back * 3);
 
+        //List<RTSTile> path = new List<RTSTile>();
+       
+
+        
+        
         EvanTestAgent agentComponent = newEnemy.GetComponent<EvanTestAgent>();
         agentComponent.Killed += _rtsGame.AgentKilled;
         agentComponent.SetIsFriendly(false);
@@ -86,6 +91,7 @@ public class Enemy : MonoBehaviour
 
         if (closetTile != null)
         {
+            //path = _aStar.FindPath(tile, closetTile , _rtsGrid);
             agentComponent.SetWaypoint(closetTile);
         }
     }
@@ -110,9 +116,7 @@ public class Enemy : MonoBehaviour
     {
         _aStar = new AStar();
         
-        List<Tile> path = new List<Tile>();
-        //path = _aStar.FindPath(start, goal , grid);
-        
+       
         // have to check whose turn it is as well 
 
        

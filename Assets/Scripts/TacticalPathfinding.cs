@@ -1,5 +1,7 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using Utils;
 public class TacticalPathfinding : MonoBehaviour
@@ -17,8 +19,9 @@ public class TacticalPathfinding : MonoBehaviour
     private AStar _aStar = new AStar();
     
     private TilePrioritized _ptile = new TilePrioritized();
-
-    private RTSGrid _grid;
+   
+    //'GameObject.AddComponent<T>()'
+    private RTSGrid _rtsGrid =  new RTSGrid();
     
     private EvanTestAgent _agent = new EvanTestAgent();
     
@@ -26,81 +29,79 @@ public class TacticalPathfinding : MonoBehaviour
     
     List<RTSTile> _path = new List<RTSTile>();
 
-    private void Start()
-    {
-        _grid = transform.gameObject.GetComponent<RTSGrid>();
-    }
-
+    private Dictionary<RTSTile, float> _usefulTiles; 
     // find the distance from point to the point
     float Heuristic(Vector2 p1, Vector2 p2)
     {
         return Mathf.Abs(p1.x - p2.x) + Mathf.Abs(p1.y - p2.y);
     }
-
-
-    /*
-     * the base cost without money would be cost = PositionalAdvantage - (Distance * MovementCost) - distanceToEnemy
-
-       PositionalAdvantage depends on if you can see the enemy from there
-       so my example would be like: 
-       at the certain Pos use the line of sight algorthim i already got to check  for the Agent
-       if it cant look for another position
-       calculate the distance to enemy: maybe using the heuristic with the agentsCurrentPos
-       or i could sub whether or not were at the goal point for distanceToEnemy
-     */
-    
     
     public List<RTSTile> FindBestPath(RTSTile start,  RTSTile end, RTSGrid grid)
     {
-        _path = _aStar.FindPath(start, end, grid);
-        float bestTileValue = 0;
-
-        foreach (var tile in _path)
+        /*
+           * Identify multiple candidate goal tiles (tiles near enemies, near objectives, good tactical positions)
+              Run A* to each candidate from your start position
+              Evaluate each complete path's tactical value
+              Pick the goal with the best value
+           */
+        
+        // add all the money tile positions to the list 
+        List<Vector2Int> moneyTileLocations = _rtsGrid.GetMoneyTiles(false);
+        
+        // get all the money tiles from their positions
+        foreach(var tileLocations in moneyTileLocations)
         {
+            // money tile locations
+            RTSTile newTile = _rtsGrid.GetTileAtPosition(tileLocations); 
+            
+            // now need to calculate the tactical value for a money tile
+            // value = PositionalAdvantage - (Distance * MovementCost) - distanceToEnemy
+            int tileValue = 10; 
+            
+            // distance to money tile
+            List<RTSTile> pathToMoneyTile = _aStar.FindPath(start, newTile, grid);
+            
+            if (pathToMoneyTile.Count == 0)
+            {
+                continue;
+            }
+            
+            float distanceToMoneyTile = _aStar.GetDistance();
+            
+            RTSTile enemyLocation = _agent.GetCurrentTile();
+            
+            float distanceToEnemy = Heuristic(newTile.GetCurrentTilePosition(), enemyLocation.GetCurrentTilePosition());
+            float threat = 1.0f / distanceToEnemy > 0 ? 1.0f / distanceToEnemy : float.MaxValue;
+            
+            int threatWeight = 2; 
 
-            _ptile.Tile = tile;
-            // find the distance calculated by A*
-            _ptile.Distance = _aStar.GetDistance();
-            
-            
-            // calculate the current tiles tactical value
-            // if the current tile can see the enemy increases its tactical value
+            float tacticalValue = tileValue - distanceToMoneyTile - (threat * threatWeight); 
+            _usefulTiles.Add(newTile, tacticalValue);
+        }
+
+        // get the current tile that the enemy agent is on 
+        //RTSTile enemyLocation = _agent.GetCurrentTile();
+        //_usefulTiles.Add(enemyLocation, );
+        
+        // calculate the current tiles tactical value
+        // if the current tile can see the enemy increases its tactical value
+        /*foreach (var tile in _rtsGrid.GetTiles())
+        {
             if (LineOfSight(tile, _agent.GetCurrentTile()))
             {
-                _ptile.TacticalValue += 1; 
+                //_usefulTiles.Add(tile);
+               // _ptile.TacticalValue += 1;
             }
             else
             {
-                _ptile.TacticalValue = 0;
+                //_ptile.TacticalValue = 0;
             }
-            
-            // if is the goal tile should also have an effect on it 
-            //TacticalValue = CombatAdvantage + (ObjectiveWeight / DistanceToObjective) - TravelCost - Threat
-            
-            // find the best suitable path
-            // tact value is if we can see the enemy
-            // obj weight is if were close to the goal tile or on it
-            // threat is distance to enemy 
-            _ptile.DistanceToEnemy = Heuristic(_ptile.Tile.GetGridPosition(), _agent.GetCurrentTile().GetGridPosition());
-            float currentPosValue = (_ptile.TacticalValue + ( _ptile.ObjectiveWeight / _ptile.Distance) - _ptile.DistanceToEnemy);
-
-            if (bestTileValue > currentPosValue)
-            {
-                // add all the paths with the best value to a list and return the list
-                
-            }
-            return new List<RTSTile>();
-        }
+        }*/
         
-        // if we see the agent from our current tile
-        /*if (LineOfSight(_current.Tile, _agent.currentTile))
-        {
-            
-            //_distanceToEnemy = Heuristic(_current.Tile.gridPosition, _agent.currentTile.gridPosition);
-        }
-        //float distance = Heuristic(_start.gridPosition, _goal.gridPosition);
-        return distance;*/
-        return null;
+        // find the key associated with the highest tactical  value
+        var associatedKey =  _usefulTiles.Aggregate((x,y) => x.Value > y.Value ? x : y);
+        // return the path of the best key
+        return _aStar.FindPath(start, associatedKey.Key, grid);
     }
 
     public void SetAgent(EvanTestAgent newAgent)
@@ -110,8 +111,8 @@ public class TacticalPathfinding : MonoBehaviour
     
     bool LineOfSight(RTSTile from, RTSTile to)
     {
-        Vector2 startPos = from.GetGridPosition();
-        Vector2 endPos = to.GetGridPosition();
+        Vector2Int startPos = from.GetGridPosition();
+        Vector2Int endPos = to.GetGridPosition();
         
         // calculate the difference between the end and start positions
         var dx = endPos.x - startPos.x;
@@ -130,10 +131,10 @@ public class TacticalPathfinding : MonoBehaviour
         // loop through all the steps checking for any obstacle between from and to
         for (int i = 0; i < steps; ++i)
         {
-            var gridX = (int)Mathf.Round(currentX);
-            var gridY = (int)Mathf.Round(currentY);
+            int gridX = Mathf.RoundToInt(currentX);
+            int gridY = Mathf.RoundToInt(currentY);
             
-            RTSTile tile = _grid.GetTileAtPosition(new Vector2Int(gridX, gridY));
+            RTSTile tile = _rtsGrid.GetTileAtPosition(new Vector2Int(gridX, gridY));
             if (tile != null && tile != from && tile != to)
             {
                 if (tile.GetTileType() == RTSTile.TileType.Blocked)
