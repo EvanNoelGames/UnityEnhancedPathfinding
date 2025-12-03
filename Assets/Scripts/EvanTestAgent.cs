@@ -208,6 +208,7 @@ public class EvanTestAgent : MonoBehaviour
     public void SetPath(List<RTSTile> newPath)
     {
         path = newPath;
+        
         targetTile = path[0];
         path.RemoveAt(0);
         isMoving = true;

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.VisualScripting;
 using UnityEngine;
 using Utils; 
@@ -10,16 +11,21 @@ public class Enemy : MonoBehaviour
     public int maxAgents = 8;
     private EvanTestAgent _agent;
     private AStar _aStar;
+    private TacticalPath _tacticalPath;
     
     private RTSTile _rtsTile;
     public RTSGrid _rtsGrid;
     public RTSGame _rtsGame;
     
     private Tile _goal;
+    RTSTile closetTile = null;
     
     private int money = 0;
     private int agentCost = 0;
     private float spawnInterval = 1.0f;
+    int numAgents = 0;
+    
+    Dictionary<RTSTile, int> _tilesBeingTargeted =  new Dictionary<RTSTile, int>();
 
     public void GameStart(int startingMoney, int newAgentCost)
     {
@@ -68,22 +74,41 @@ public class Enemy : MonoBehaviour
         agentComponent.SetCurrentTile(tile);
 
         List<Vector2Int> moneyTileLocations = _rtsGrid.GetMoneyTiles(false);
-        RTSTile closetTile = null;
-        float currentMinDistance = 18;
         
-        foreach(var tileLocations in moneyTileLocations)
-        {
-            RTSTile newTile = _rtsGrid.GetTileAtPosition(tileLocations); 
-            
-            float distance = Mathf.Abs(tileLocations.x - tile.GetGridPosition().x) + Mathf.Abs(tileLocations.y - tile.GetGridPosition().y);
-            
-            if (distance < currentMinDistance)
-            {
-                currentMinDistance = distance;
-                closetTile = newTile;
-            }
-        }
+        
 
+        List<EvanTestAgent> agents = _rtsGame.GetAllAgents();
+        
+        //EvanTestAgent agent = _rtsGame.GetAgent();
+        
+            
+        _tacticalPath = new TacticalPath();
+        List<RTSTile> bestPath =  _tacticalPath.FindBestPath(tile, _rtsGrid, agents, _tilesBeingTargeted);
+        
+        var size = bestPath.Count;
+
+        if (_tilesBeingTargeted.ContainsKey(bestPath.ElementAt(size - 1)))
+        {
+            if (_tilesBeingTargeted.TryGetValue(bestPath.ElementAt(size - 1), out var value))
+            {
+                _tilesBeingTargeted[bestPath.ElementAt(size - 1)] = value + 1;
+            }
+            
+        }
+        else
+        {
+            _tilesBeingTargeted.Add(bestPath.ElementAt(size - 1), 1);
+        }
+        
+        
+        
+        Debug.Log(bestPath.Count);
+       
+           
+       
+       agentComponent.SetPath(bestPath);
+        
+       
         if (closetTile == null)
         {
             closetTile =  _rtsGrid.GetEmptyTiles()[Random.Range(0, _rtsGrid.GetEmptyTiles().Count)];

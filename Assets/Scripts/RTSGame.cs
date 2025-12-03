@@ -19,7 +19,7 @@ public class RTSGame : MonoBehaviour
     [Header("Prefabs")]
     [SerializeField] private GameObject agentPrefab;
     [SerializeField] private GameObject waypointPrefab;
-    [SerializeField] private TacticalPathfinding tacticalPathfinding;
+    [SerializeField] private TacticalPath _tacticalPath;
     [Header("Values")]
     [SerializeField] private int agentCost = 3;
     [SerializeField] private int startingMoney = 50;
@@ -31,6 +31,7 @@ public class RTSGame : MonoBehaviour
     
     private GameObject currentWaypoint = null;
     private List<EvanTestAgent> guidingAgents = new List<EvanTestAgent>();
+    private List<EvanTestAgent> activeAgents = new List<EvanTestAgent>();
     
     public int playerAgents = 0;
     public int enemyAgents = 0;
@@ -91,6 +92,7 @@ public class RTSGame : MonoBehaviour
     public void AgentKilled(bool friendly, GameObject agent)
     {
         EvanTestAgent agentComponent = agent.GetComponent<EvanTestAgent>();
+        activeAgents.Remove(agentComponent);
         
         if (guidingAgents.Contains(agentComponent))
         {
@@ -342,6 +344,12 @@ public class RTSGame : MonoBehaviour
         agentComponent.Killed += AgentKilled;
         agentComponent.Setup();
         agentComponent.SetCurrentTile(tile);
+        activeAgents.Add(agentComponent);
+    }
+
+    public List<EvanTestAgent> GetAllAgents()
+    {
+        return activeAgents;
     }
     #endregion
     

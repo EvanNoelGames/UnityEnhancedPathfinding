@@ -1,12 +1,11 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
-using Utils;
-public class TacticalPathfinding : MonoBehaviour
+using System.Linq;
+
+public class TacticalPath
 {
-    struct TilePrioritized
+   struct TilePrioritized
     {
         public RTSTile Tile;
         public float Distance;
@@ -19,15 +18,21 @@ public class TacticalPathfinding : MonoBehaviour
     private AStar _aStar = new AStar();
     
     private TilePrioritized _ptile = new TilePrioritized();
-   
-    //'GameObject.AddComponent<T>()'
+    
     private RTSGrid _rtsGrid =  new RTSGrid();
+    private RTSGame _game = new RTSGame();
     
     private EvanTestAgent _agent = new EvanTestAgent();
     
     private RTSTile _currentTile = new RTSTile();
     
     List<RTSTile> _path = new List<RTSTile>();
+    float currentMinDistance = 18;
+
+    private float distanceToEnemy = 0.0f;
+    RTSTile closetTile = null;
+    private float distance;
+
 
     private Dictionary<RTSTile, float> _usefulTiles; 
     // find the distance from point to the point
@@ -36,7 +41,7 @@ public class TacticalPathfinding : MonoBehaviour
         return Mathf.Abs(p1.x - p2.x) + Mathf.Abs(p1.y - p2.y);
     }
     
-    public List<RTSTile> FindBestPath(RTSTile start,  RTSTile end, RTSGrid grid)
+    public List<RTSTile> FindBestPath(RTSTile start, RTSGrid grid, List<EvanTestAgent> agents, Dictionary<RTSTile, int> targetTiles)
     {
         /*
            * Identify multiple candidate goal tiles (tiles near enemies, near objectives, good tactical positions)
@@ -45,14 +50,26 @@ public class TacticalPathfinding : MonoBehaviour
               Pick the goal with the best value
            */
         
+        _usefulTiles = new Dictionary<RTSTile, float>();
+        
         // add all the money tile positions to the list 
-        List<Vector2Int> moneyTileLocations = _rtsGrid.GetMoneyTiles(false);
+        List<Vector2Int> moneyTileLocations = grid.GetMoneyTiles(false);
+        List<RTSTile> playerLocations = new List<RTSTile>();
+
+        foreach (var agent in agents)
+        {
+            if (!agent.GetIsFriendly())
+            {
+               playerLocations.Add(agent.GetCurrentTile());
+            }
+        }
         
         // get all the money tiles from their positions
         foreach(var tileLocations in moneyTileLocations)
         {
+            currentMinDistance = 18;
             // money tile locations
-            RTSTile newTile = _rtsGrid.GetTileAtPosition(tileLocations); 
+            RTSTile newTile = grid.GetTileAtPosition(tileLocations); 
             
             // now need to calculate the tactical value for a money tile
             // value = PositionalAdvantage - (Distance * MovementCost) - distanceToEnemy
@@ -61,6 +78,7 @@ public class TacticalPathfinding : MonoBehaviour
             // distance to money tile
             List<RTSTile> pathToMoneyTile = _aStar.FindPath(start, newTile, grid);
             
+            Debug.Log(pathToMoneyTile);
             if (pathToMoneyTile.Count == 0)
             {
                 continue;
@@ -68,10 +86,25 @@ public class TacticalPathfinding : MonoBehaviour
             
             float distanceToMoneyTile = _aStar.GetDistance();
             
-            RTSTile enemyLocation = _agent.GetCurrentTile();
             
-            float distanceToEnemy = Heuristic(newTile.GetCurrentTilePosition(), enemyLocation.GetCurrentTilePosition());
-            float threat = 1.0f / distanceToEnemy > 0 ? 1.0f / distanceToEnemy : float.MaxValue;
+            //RTSTile enemyLocation = playerAgents.GetCurrentTile();
+            foreach(var players in playerLocations)
+            {
+                
+                distance = Heuristic(tileLocations, players.GetCurrentTilePosition());
+                //RTSTile playerTile = _rtsGrid.GetTileAtPosition(playerLocations);
+
+                //float distance = Mathf.Abs(tileLocations.x - players.GetGridPosition().x) + Mathf.Abs(tileLocations.y - players.GetGridPosition().y);
+
+                if (distance < currentMinDistance)
+                {
+                    currentMinDistance = distance;
+       
+                    //distanceToEnemy = Heuristic(newTile.GetCurrentTilePosition(), closetTile.GetCurrentTilePosition());
+                }
+            }
+           
+            float threat = 1.0f / currentMinDistance > 0 ? 1.0f / currentMinDistance : float.MaxValue;
             
             int threatWeight = 2; 
 
@@ -97,6 +130,11 @@ public class TacticalPathfinding : MonoBehaviour
                 //_ptile.TacticalValue = 0;
             }
         }*/
+
+        if (_usefulTiles == null || _usefulTiles.Count == 0)
+        {
+            return null;
+        }
         
         // find the key associated with the highest tactical  value
         var associatedKey =  _usefulTiles.Aggregate((x,y) => x.Value > y.Value ? x : y);
