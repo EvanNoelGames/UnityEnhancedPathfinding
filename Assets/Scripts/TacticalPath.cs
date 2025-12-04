@@ -32,7 +32,7 @@ public class TacticalPath
     private float distanceToEnemy = 0.0f;
     RTSTile closetTile = null;
     private float distance;
-
+    private int agentPenalty = 0;
 
     private Dictionary<RTSTile, float> _usefulTiles; 
     // find the distance from point to the point
@@ -49,6 +49,7 @@ public class TacticalPath
               Evaluate each complete path's tactical value
               Pick the goal with the best value
            */
+        agentPenalty = 0;
         
         _usefulTiles = new Dictionary<RTSTile, float>();
         
@@ -71,14 +72,11 @@ public class TacticalPath
             // money tile locations
             RTSTile newTile = grid.GetTileAtPosition(tileLocations); 
             
-            // now need to calculate the tactical value for a money tile
-            // value = PositionalAdvantage - (Distance * MovementCost) - distanceToEnemy
-            int tileValue = 10; 
+            int tileValue = 300; 
             
             // distance to money tile
             List<RTSTile> pathToMoneyTile = _aStar.FindPath(start, newTile, grid);
             
-            Debug.Log(pathToMoneyTile);
             if (pathToMoneyTile.Count == 0)
             {
                 continue;
@@ -86,51 +84,38 @@ public class TacticalPath
             
             float distanceToMoneyTile = _aStar.GetDistance();
             
-            
-            //RTSTile enemyLocation = playerAgents.GetCurrentTile();
+            // loop through all the players agents to calculate the minimum distance
             foreach(var players in playerLocations)
             {
                 
                 distance = Heuristic(tileLocations, players.GetCurrentTilePosition());
-                //RTSTile playerTile = _rtsGrid.GetTileAtPosition(playerLocations);
-
-                //float distance = Mathf.Abs(tileLocations.x - players.GetGridPosition().x) + Mathf.Abs(tileLocations.y - players.GetGridPosition().y);
-
+               
                 if (distance < currentMinDistance)
                 {
                     currentMinDistance = distance;
-       
-                    //distanceToEnemy = Heuristic(newTile.GetCurrentTilePosition(), closetTile.GetCurrentTilePosition());
                 }
             }
-           
-            float threat = 1.0f / currentMinDistance > 0 ? 1.0f / currentMinDistance : float.MaxValue;
-            
-            int threatWeight = 2; 
 
-            float tacticalValue = tileValue - distanceToMoneyTile - (threat * threatWeight); 
-            _usefulTiles.Add(newTile, tacticalValue);
-        }
-
-        // get the current tile that the enemy agent is on 
-        //RTSTile enemyLocation = _agent.GetCurrentTile();
-        //_usefulTiles.Add(enemyLocation, );
-        
-        // calculate the current tiles tactical value
-        // if the current tile can see the enemy increases its tactical value
-        /*foreach (var tile in _rtsGrid.GetTiles())
-        {
-            if (LineOfSight(tile, _agent.GetCurrentTile()))
+            // if tiles are found that other agents are targeting apply a penalty
+            if (targetTiles.TryGetValue(newTile, out var value))
             {
-                //_usefulTiles.Add(tile);
-               // _ptile.TacticalValue += 1;
+                agentPenalty = value * value * 40;
             }
             else
             {
-                //_ptile.TacticalValue = 0;
+                agentPenalty = 0;
             }
-        }*/
-
+           
+            // calculate the threat by using the enemies distance 
+            float threat = 1.0f / currentMinDistance > 0 ? 1.0f / currentMinDistance : float.MaxValue;
+            
+            float threatDistanceWeight = 0.1f; 
+            
+            // find the tactical value of the tile from the value of the money to its distance and the amount of agents targteting it and how close enemy agents are
+            float tacticalValue = tileValue - distanceToMoneyTile - agentPenalty - (threat * threatDistanceWeight); 
+            _usefulTiles.Add(newTile, tacticalValue);
+        }
+        
         if (_usefulTiles == null || _usefulTiles.Count == 0)
         {
             return null;
@@ -145,44 +130,5 @@ public class TacticalPath
     public void SetAgent(EvanTestAgent newAgent)
     {
         _agent = newAgent;
-    }
-    
-    bool LineOfSight(RTSTile from, RTSTile to)
-    {
-        Vector2Int startPos = from.GetGridPosition();
-        Vector2Int endPos = to.GetGridPosition();
-        
-        // calculate the difference between the end and start positions
-        var dx = endPos.x - startPos.x;
-        var dy = endPos.y - startPos.y;
-        
-        // find the proper amount of steps to sample
-        var steps = Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dy));
-        
-        // divide the differences of x and y by the amount of steps
-        var xInc = dx / steps;
-        var yInc = dy / steps;
-
-        var currentX = startPos.x;
-        var currentY = startPos.y;
-
-        // loop through all the steps checking for any obstacle between from and to
-        for (int i = 0; i < steps; ++i)
-        {
-            int gridX = Mathf.RoundToInt(currentX);
-            int gridY = Mathf.RoundToInt(currentY);
-            
-            RTSTile tile = _rtsGrid.GetTileAtPosition(new Vector2Int(gridX, gridY));
-            if (tile != null && tile != from && tile != to)
-            {
-                if (tile.GetTileType() == RTSTile.TileType.Blocked)
-                {
-                    return false;
-                }
-            }
-            currentX += xInc;
-            currentY += yInc;
-        }
-        return true;
     }
 }

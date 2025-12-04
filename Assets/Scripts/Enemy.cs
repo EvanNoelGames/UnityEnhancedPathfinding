@@ -81,44 +81,51 @@ public class Enemy : MonoBehaviour
         
         //EvanTestAgent agent = _rtsGame.GetAgent();
         
-            
+        // find the best path
         _tacticalPath = new TacticalPath();
         List<RTSTile> bestPath =  _tacticalPath.FindBestPath(tile, _rtsGrid, agents, _tilesBeingTargeted);
         
-        var size = bestPath.Count;
+       
 
-        if (_tilesBeingTargeted.ContainsKey(bestPath.ElementAt(size - 1)))
+        if (bestPath != null && bestPath.Count > 0)
         {
-            if (_tilesBeingTargeted.TryGetValue(bestPath.ElementAt(size - 1), out var value))
+            var size = bestPath.Count;
+
+            // find the tile picked from best path increment its value based on the agents tracking it 
+            if (_tilesBeingTargeted.ContainsKey(bestPath.ElementAt(size - 1)))
             {
-                _tilesBeingTargeted[bestPath.ElementAt(size - 1)] = value + 1;
+                if (_tilesBeingTargeted.TryGetValue(bestPath.ElementAt(size - 1), out var value))
+                {
+                    _tilesBeingTargeted[bestPath.ElementAt(size - 1)] = value + 1;
+                }
+            }
+            else
+            {
+                _tilesBeingTargeted.Add(bestPath.ElementAt(size - 1), 1);
             }
             
+            RTSTile goalTile = bestPath[bestPath.Count - 1];
+            agentComponent.SetPath(bestPath);
         }
         else
         {
-            _tilesBeingTargeted.Add(bestPath.ElementAt(size - 1), 1);
-        }
-        
-        
-        
-        Debug.Log(bestPath.Count);
-       
-           
-       
-       agentComponent.SetPath(bestPath);
-        
-       
-        if (closetTile == null)
-        {
-            closetTile =  _rtsGrid.GetEmptyTiles()[Random.Range(0, _rtsGrid.GetEmptyTiles().Count)];
-        }
-
-        if (closetTile != null)
-        {
-            //path = _aStar.FindPath(tile, closetTile , _rtsGrid);
+            if (closetTile == null)
+            {
+                closetTile =  _rtsGrid.GetEmptyTiles()[Random.Range(0, _rtsGrid.GetEmptyTiles().Count)];
+            }
+            
             agentComponent.SetWaypoint(closetTile);
         }
+        
+        /*if (closetTile == null)
+        {
+            closetTile =  _rtsGrid.GetEmptyTiles()[Random.Range(0, _rtsGrid.GetEmptyTiles().Count)];
+        }*/
+
+        /*if (closetTile != null)
+        {
+            agentComponent.SetWaypoint(closetTile);
+        }*/
     }
 
     public void SetAgentCost(int newValue)
@@ -137,26 +144,6 @@ public class Enemy : MonoBehaviour
         print(spawnInterval);
     }
     
-    void CreateAgent(RTSTile start, RTSTile goal, RTSGrid grid)
-    {
-        _aStar = new AStar();
-        
-       
-        // have to check whose turn it is as well 
-
-       
-        // create the actual game object for the agent
-        agentPrefab = Instantiate(agentPrefab);
-
-        // set its position
-        agentPrefab.transform.position = new Vector3(2, 2, 2);
-
-        // set up the agent
-        _agent = agentPrefab.GetComponent<EvanTestAgent>();
-
-        _agent.SetWaypoint(goal);
-        
-    }
 
     public int GetMoney()
     {
