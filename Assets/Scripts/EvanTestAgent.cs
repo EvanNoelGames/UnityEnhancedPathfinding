@@ -60,22 +60,22 @@ public class EvanTestAgent : MonoBehaviour
             transform.position = Vector3.MoveTowards(transform.position, waypoint, Time.deltaTime);
             
             // We're really close to the target
-            // if ((transform.position - waypoint).magnitude < 0.005)
-            // {
-            //     if (path.Count == 1)
-            //     {
-            //         path.RemoveAt(0);
-            //         isMoving = false;
-            //         transform.position = waypoint;
-            //         return;
-            //     }
-            //
-            //     if (path.Count != 0)
-            //     {
-            //         path.RemoveAt(0);
-            //         waypoint = path[0].transform.position + Vector3.back * 3;   
-            //     }
-            // }
+             if ((transform.position - waypoint).magnitude < 0.005)
+             {
+                 if (path.Count == 1)
+                 {
+                     path.RemoveAt(0);
+                     isMoving = false;
+                     transform.position = waypoint;
+                     return;
+                 }
+            
+                 if (path.Count != 0)
+                 {
+                     path.RemoveAt(0);
+                     waypoint = path[0].transform.position + Vector3.back * 3;   
+                 }
+            }
         }
     }
     
@@ -208,7 +208,9 @@ public class EvanTestAgent : MonoBehaviour
     public void SetPath(List<RTSTile> newPath)
     {
         path = newPath;
+       
         targetTile = path[0];
+        waypoint = targetTile.transform.position + Vector3.back * 3;
         path.RemoveAt(0);
         isMoving = true;
     }
