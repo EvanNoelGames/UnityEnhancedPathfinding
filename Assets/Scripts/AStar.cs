@@ -56,7 +56,7 @@ public class AStar
         {
             _current = _frontier.Dequeue();
     
-            _neighbors = grid.FindNeighbors(_current.Tile);
+            _neighbors = grid.FindNeighbors(_current.Tile, false);
 
             if (_current.Tile == goal)
             {
@@ -66,7 +66,6 @@ public class AStar
             // loop through all posible neighbors of the current tile calculating cost and setting the priority 
             foreach(var next in _neighbors)
             {
-               
                 float newcost = _costSoFar[_current.Tile] + 1;
 
                 if (!_costSoFar.ContainsKey(next) || newcost < _costSoFar[next])
@@ -90,7 +89,6 @@ public class AStar
             return new List<RTSTile>();
         }
         
-        
         List<RTSTile> path = new List<RTSTile>();
 
         RTSTile currentTile = _current.Tile;
@@ -104,7 +102,6 @@ public class AStar
         path.Add(start);
         path.Reverse();
         return path;
-        
     }
 
     public float GetDistance()

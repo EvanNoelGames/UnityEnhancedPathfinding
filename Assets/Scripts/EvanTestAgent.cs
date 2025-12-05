@@ -47,36 +47,35 @@ public class EvanTestAgent : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (leader)
-        {
-            if (leader.GetComponent<EvanTestAgent>().GetIsMoving() && (transform.position - leader.transform.position).magnitude < 0.05)
-                rigidBody.transform.position = Vector3.MoveTowards(rigidBody.transform.position, leader.transform.position, Time.deltaTime);
-            
-            return;
-        }
+        if (!isMoving) return;
         
-        if (isMoving)
+        // Move toward target position
+        transform.position = Vector3.MoveTowards(transform.position, waypoint, Time.deltaTime);
+
+        // We're really close to the target
+        if ((transform.position - waypoint).magnitude < 0.005)
         {
-            // Move toward target position
-            rigidBody.transform.position = Vector3.MoveTowards(rigidBody.transform.position, waypoint, Time.deltaTime);
-            
-            // We're really close to the target
-             if ((transform.position - waypoint).magnitude < 0.005)
-             {
-                 if (path.Count == 1)
-                 {
-                     path.RemoveAt(0);
-                     isMoving = false;
-                     transform.position = waypoint;
-                     return;
-                 }
-            
-                 if (path.Count != 0)
-                 {
-                     path.RemoveAt(0);
-                     waypoint = path[0].transform.position + Vector3.back * 3;   
-                 }
+            // Early return if path is modified
+            if (path.Count == 0)
+                return;
+    
+            // Pop off top of path
+            path.RemoveAt(0);
+            if (path.Count == 0)
+                return;
+            currentTile = path.First();
+    
+            // Path is over
+            if (path.Count == 0)
+            {
+                isMoving = false;
+                transform.position = waypoint;
+                return;
             }
+
+            // Get new target
+            waypoint = path.First().transform.position + Vector3.back * 3;
+            targetTile = path.First();
         }
     }
     
@@ -212,7 +211,6 @@ public class EvanTestAgent : MonoBehaviour
        
         targetTile = path[0];
         waypoint = targetTile.transform.position + Vector3.back * 3;
-        path.RemoveAt(0);
         isMoving = true;
     }
 

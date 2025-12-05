@@ -321,12 +321,18 @@ public class RTSGame : MonoBehaviour
 
         //guidingAgents[0].SetPath(newPath);
 
+        _tacticalPath = new TacticalPath();
+        
         // Placing on tile
+        AStar astar = new AStar();
+        
         foreach (EvanTestAgent agent in guidingAgents)
         {
-            agent.SetWaypoint(targetTile);
+            List<RTSTile> newPath = astar.FindPath(agent.GetCurrentTile(), targetTile, grid);
+            agent.SetPath(newPath);
             targetTile.plannedOwner = agent.gameObject;
         }
+        
         // else // Placing on enemy agent
         // {
         //     foreach (EvanTestAgent agent in guidingAgents)
